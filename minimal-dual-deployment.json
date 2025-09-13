@@ -1,0 +1,14 @@
+{
+  "network": "HyperEVM",
+  "chainId": 999,
+  "factoryAddress": "0x77EF9fa2675b393ce2faf31D68F423242D832aB9",
+  "realHypeToken": "0x5555555555555555555555555555555555555555",
+  "deployer": "0xbFC06dE2711aBEe4d1D9F370CDe09773dDDE7048",
+  "deployedAt": "2025-08-20T01:14:52.856Z",
+  "version": "Minimal Dual HYPE",
+  "features": {
+    "nativeHypeSupport": true,
+    "wrappedHypeSupport": true,
+    "dualWithdrawal": true
+  }
+}
