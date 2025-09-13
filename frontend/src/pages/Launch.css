@@ -1,0 +1,134 @@
+.launch-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.connect-section,
+.launch-section {
+  margin-bottom: 32px;
+}
+
+.connect-card,
+.launch-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.connect-card:hover,
+.launch-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+}
+
+.connect-title,
+.launch-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+}
+
+.connect-description,
+.launch-description {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.btn-large {
+  padding: 16px 32px;
+  font-size: 16px;
+  min-height: 48px;
+}
+
+/* Twitter Connection Styles */
+.twitter-connected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  margin-bottom: 16px;
+}
+
+.twitter-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.twitter-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+}
+
+.twitter-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.twitter-username {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.twitter-status {
+  font-size: 14px;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.twitter-connect {
+  text-align: center;
+}
+
+/* Safari touch fixes */
+.btn {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .connect-card,
+  .launch-card {
+    padding: 24px;
+  }
+  
+  .connect-title,
+  .launch-title {
+    font-size: 20px;
+  }
+  
+  .connect-description,
+  .launch-description {
+    font-size: 14px;
+  }
+  
+  .twitter-connected {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .twitter-profile {
+    flex-direction: column;
+  }
+}
