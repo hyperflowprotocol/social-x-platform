@@ -32,6 +32,15 @@ class handler(BaseHTTPRequestHandler):
         jerome_volume_24h = random.randint(2000, 6000)
         jerome_holders = random.randint(200, 300)
         
+        # Jeffrey.hl data - premium tier dynamics
+        jeffrey_price_variance = random.uniform(-0.009, 0.015)  # ±7% of 0.18
+        jeffrey_current_price = round(0.18 + jeffrey_price_variance, 4)
+        jeffrey_total_supply = 60000  # Lower supply, higher value
+        jeffrey_market_cap = round(jeffrey_current_price * jeffrey_total_supply)
+        jeffrey_daily_change = round(random.uniform(-8.0, 75.0), 1)  # Higher potential gains
+        jeffrey_volume_24h = random.randint(3000, 8000)  # Highest volume
+        jeffrey_holders = random.randint(350, 500)  # Most holders (1.6K followers)
+        
         accounts = [{
             "name": "diero_hl", 
             "handle": "diero_hl", 
@@ -50,6 +59,15 @@ class handler(BaseHTTPRequestHandler):
             "daily_change": jerome_daily_change,
             "holders": jerome_holders,
             "volume_24h": jerome_volume_24h
+        }, {
+            "name": "Jeffrey.hl",
+            "handle": "jeffrey_hl",
+            "avatar": "https://amethyst-defensive-marsupial-68.mypinata.cloud/ipfs/bafkreidt75eg2r6oao2uamqgrhrksvv6o6osqt2cr2uz2tzou3xp3cky6m",
+            "price_per_token": jeffrey_current_price,
+            "market_cap": jeffrey_market_cap,
+            "daily_change": jeffrey_daily_change,
+            "holders": jeffrey_holders,
+            "volume_24h": jeffrey_volume_24h
         }]
         
         response = {"accounts": accounts}
