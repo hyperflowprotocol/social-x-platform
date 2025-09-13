@@ -1,18 +1,37 @@
 from http.server import BaseHTTPRequestHandler
 import json
+import random
+import time
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        # @diero_hl profile data
+        # Generate dynamic, live-changing data for @diero_hl
+        base_time = time.time()
+        
+        # Price fluctuates around $0.12 (°5%)
+        price_variance = random.uniform(-0.006, 0.006)  # °5% of 0.12
+        current_price = round(0.12 + price_variance, 4)
+        
+        # Market cap changes with price (100,000 total supply assumed)
+        total_supply = 100000
+        current_market_cap = round(current_price * total_supply)
+        
+        # Daily change varies between -10% to +50%  
+        daily_change = round(random.uniform(-10.0, 50.0), 1)
+        
+        # Volume and holders fluctuate
+        volume_24h = random.randint(1500, 4000)
+        holders = random.randint(120, 180)
+        
         accounts = [{
             "name": "diero_hl", 
             "handle": "diero_hl", 
             "avatar": "/avatar-diero.png",
-            "price_per_token": 0.12, 
-            "market_cap": 12000, 
-            "daily_change": 25.8,
-            "holders": 145,
-            "volume_24h": 2500
+            "price_per_token": current_price, 
+            "market_cap": current_market_cap, 
+            "daily_change": daily_change,
+            "holders": holders,
+            "volume_24h": volume_24h
         }]
         
         response = {"accounts": accounts}
