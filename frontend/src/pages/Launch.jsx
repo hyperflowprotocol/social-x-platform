@@ -1,38 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import './Launch.css';
 
-// Force update: 2025-09-13T12:27:02.165Z
-
 const Launch = () => {
-  const { ready, authenticated, user, logout } = usePrivy();
+  const { ready, authenticated, user, login, logout } = usePrivy();
   const [isLaunching, setIsLaunching] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
   
-  // Get Twitter/X account info
+  // Get Twitter/X account info from Privy authentication
   const twitterAccount = user?.linkedAccounts?.find(account => 
-    (account?.type === 'oauth' && ['twitter', 'x'].includes(account?.provider)) ||
-    ['twitter', 'twitter_oauth', 'oauth_twitter'].includes(account?.type)
+    account?.type === 'twitter_oauth' || 
+    (account?.type === 'oauth' && account?.provider === 'twitter')
   );
   
-  const hasTwitter = !!twitterAccount || !!user?.twitter;
-  const twitterUsername = twitterAccount?.username || twitterAccount?.handle || 
-                          user?.twitter?.username || user?.twitter?.handle || 
-                          twitterAccount?.name;
+  const hasTwitter = !!twitterAccount;
+  const twitterUsername = twitterAccount?.username || twitterAccount?.handle;
+  const twitterAvatar = twitterAccount?.profilePictureUrl;
   
+  const hasWallet = !!user?.wallet?.address;
+
+  const handleConnectWallet = () => {
+    login();
+  };
+
   const handleLaunch = async () => {
-    if (!authenticated || !hasTwitter) {
-      alert('Please connect your Twitter/X account first');
+    if (!hasTwitter || !hasWallet) {
+      alert('Please connect both Twitter and wallet first');
       return;
     }
     
     setIsLaunching(true);
     
     try {
-      // Simulate launch process
+      // Real token launch will integrate with smart contracts
       await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log(`Launching token for @${twitterUsername}`);
-      alert(`Token launch initiated for @${twitterUsername}!`);
+      alert(`Launching token for @${twitterUsername}!`);
     } catch (error) {
       console.error('Launch error:', error);
       alert('Failed to launch token. Please try again.');
@@ -41,79 +42,93 @@ const Launch = () => {
     }
   };
 
-  const handleDisconnect = () => {
-    logout();
-    setShowDropdown(false);
-  };
-
   if (!ready) {
     return (
       <div className="launch-page">
-        <div className="loading">Loading...</div>
+        <div className="container">
+          <h1 className="page-title">Launch Your Account</h1>
+          <div className="loading-card">
+            <div className="loading">Loading...</div>
+          </div>
+        </div>
       </div>
     );
   }
 
+  // When not connected at all
+  if (!authenticated) {
+    return (
+      <div className="launch-page">
+        <div className="container">
+          <h1 className="page-title">Launch Your Account</h1>
+          
+          <div className="connect-card">
+            <h2>Connect Wallet</h2>
+            <p>Connect your wallet to get started</p>
+            <button 
+              className="connect-button"
+              onClick={handleConnectWallet}
+            >
+              Connect Wallet
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // When wallet connected, show Twitter section and Launch section
   return (
     <div className="launch-page">
       <div className="container">
-        {authenticated && hasTwitter ? (
-          <>
-            {/* Twitter Account Card */}
-            <div className="twitter-account-card">
-              <div className="account-avatar">
-                <div className="avatar-placeholder">
-                  {twitterUsername ? twitterUsername[0].toUpperCase() : 'X'}
-                </div>
-              </div>
-              <div className="account-username">@{twitterUsername || 'username'}</div>
-              <div className="dropdown-container">
-                <button 
-                  className="dropdown-toggle"
-                  onClick={() => setShowDropdown(!showDropdown)}
-                >
-                  ⋮
-                </button>
-                {showDropdown && (
-                  <div className="dropdown-menu">
-                    <button onClick={handleDisconnect}>Disconnect</button>
+        {/* Twitter Connection Card */}
+        <div className="twitter-card">
+          <h2>Connect Your Twitter</h2>
+          {hasTwitter ? (
+            <div className="twitter-connected">
+              <div className="twitter-avatar">
+                {twitterAvatar ? (
+                  <img src={twitterAvatar} alt={twitterUsername} />
+                ) : (
+                  <div className="avatar-placeholder">
+                    {twitterUsername?.[0]?.toUpperCase() || 'T'}
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Launch Section */}
-            <div className="launch-section">
-              <h1>Launch Your Account</h1>
-              <p className="launch-description">
-                Create a tradeable token for your Twitter account on HyperEVM
-              </p>
-              
+              <div className="twitter-username">@{twitterUsername}</div>
               <button 
-                className="launch-button"
-                onClick={handleLaunch}
-                disabled={isLaunching}
+                className="disconnect-button"
+                onClick={() => logout()}
               >
-                {isLaunching ? 'Launching...' : 'Launch Token'}
+                Disconnect
               </button>
-              
-              {user?.wallet?.address && (
-                <div className="wallet-status">
-                  ✅ Wallet connected: {user.wallet.address.slice(0, 6)}...{user.wallet.address.slice(-4)}
-                </div>
-              )}
             </div>
-          </>
-        ) : (
-          <div className="connect-prompt">
-            <h1>Launch Your Token</h1>
-            <p>Connect your Twitter/X account and wallet to launch your social token</p>
-            <div className="connect-status">
-              {!hasTwitter && <p>❌ Twitter/X account not connected</p>}
-              {!user?.wallet && <p>❌ Wallet not connected</p>}
+          ) : (
+            <div className="twitter-not-connected">
+              <p>Connect your Twitter account to launch your token</p>
+              <button 
+                className="connect-twitter-button"
+                onClick={handleConnectWallet}
+              >
+                Connect Twitter
+              </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Launch Account Card */}
+        <div className="launch-card">
+          <h2>Launch Your Account</h2>
+          <p>Create a tradeable token for your Twitter account on HyperEVM</p>
+          
+          <button 
+            className="launch-button"
+            onClick={handleLaunch}
+            disabled={!hasTwitter || !hasWallet || isLaunching}
+          >
+            {isLaunching ? 'Launching...' : 'Launch Token'}
+          </button>
+        </div>
       </div>
     </div>
   );
