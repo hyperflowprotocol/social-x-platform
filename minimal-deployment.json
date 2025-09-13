@@ -1,0 +1,10 @@
+{
+  "network": "HyperEVM",
+  "chainId": 999,
+  "factoryAddress": "0xA0e578D5A9B6D21E0dCc552034FB125ac2b7228d",
+  "hypeTokenAddress": "0x99c56dE989640b9Fd1aC05B2441130859485Daac",
+  "deployer": "0xbFC06dE2711aBEe4d1D9F370CDe09773dDDE7048",
+  "txHash": "0x8828ac253248f0be24b4ada562a04a1e7eb7883641711a0a334db3fc48cf5936",
+  "blockExplorer": "https://hyperliquid.cloud.blockscout.com/tx/0x8828ac253248f0be24b4ada562a04a1e7eb7883641711a0a334db3fc48cf5936",
+  "deployedAt": "2025-08-19T19:30:28.963Z"
+}
