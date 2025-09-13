@@ -1,0 +1,17 @@
+{
+  "contract_address": "0x463bb3376d623295ee07e05537542d04b75f0acd",
+  "transaction_hash": "0xe43f0861646ad34fb8c084d6d4b91e3cda453c87396c4eb19b3137cb4c60ce70",
+  "block_number": 11272380,
+  "gas_used": 1542380,
+  "deployer_wallet": "0xbfc06de2711abee4d1d9f370cde09773ddde7048",
+  "token_name": "HYPE Token",
+  "token_symbol": "HYPE",
+  "decimals": 18,
+  "total_supply": 1000000000,
+  "max_supply": 1000000000,
+  "chain_id": 998899,
+  "deployment_timestamp": 1755342383,
+  "deployment_date": "2025-08-16T11:06:23.950780",
+  "private_key_used": true,
+  "network": "HyperEVM"
+}
