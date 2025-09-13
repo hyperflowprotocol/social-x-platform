@@ -1,0 +1,23 @@
+{
+  "status": "SUCCESS",
+  "contractAddress": "0xb747b4b456eac8f92e4d3e73562402f52103c8b0",
+  "transactionHash": "0xf1a451932576a1b11f17f280774974ad3caf59c3fd24ed03aa93180166d94305",
+  "blockNumber": 11282218,
+  "gasUsed": "999914",
+  "deployer": "0xbFC06dE2711aBEe4d1D9F370CDe09773dDDE7048",
+  "network": "HyperEVM Mainnet",
+  "chainId": 999,
+  "rpcUrl": "https://rpc.hyperliquid.xyz/evm",
+  "explorerUrl": "https://purrsec.com/tx/0xf1a451932576a1b11f17f280774974ad3caf59c3fd24ed03aa93180166d94305",
+  "tokenName": "HYPE Token",
+  "tokenSymbol": "HYPE",
+  "totalSupply": "1000000000000000000000000000",
+  "deploymentDate": "2025-08-16T12:05:52.000Z",
+  "contractType": "SimpleHYPE.sol",
+  "securityFeatures": [
+    "ERC20 Standard",
+    "Access Control (Owner)",
+    "Event Logging",
+    "Transfer/Approval Functions"
+  ]
+}
