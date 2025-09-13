@@ -10,7 +10,7 @@ class handler(BaseHTTPRequestHandler):
         trade_types = ["buy", "sell"]
         
         # Generate trades for @diero_hl
-        for i in range(4):
+        for i in range(3):
             time = base_time - timedelta(minutes=random.randint(1, 120))
             shares = random.randint(50, 300)
             base_price = 0.12  # Base diero_hl price
@@ -26,7 +26,7 @@ class handler(BaseHTTPRequestHandler):
             })
         
         # Generate trades for @jeromeliquid
-        for i in range(4):
+        for i in range(3):
             time = base_time - timedelta(minutes=random.randint(1, 180))
             shares = random.randint(75, 400)  # Higher volumes for Jerome
             base_price = 0.15  # Base jerome price
@@ -37,6 +37,22 @@ class handler(BaseHTTPRequestHandler):
                 "type": random.choice(trade_types),
                 "shares": shares,
                 "account": "jeromeliquid",
+                "price": price,
+                "total_value": round(shares * price, 2)
+            })
+        
+        # Generate trades for @jeffrey_hl
+        for i in range(2):
+            time = base_time - timedelta(minutes=random.randint(1, 200))
+            shares = random.randint(100, 600)  # Premium volumes for Jeffrey
+            base_price = 0.18  # Base jeffrey price (highest)
+            price = round(base_price + random.uniform(-0.009, 0.015), 4)  # Dynamic ±7%
+            trades.append({
+                "id": f"jeffrey_trade_{i+1}",
+                "timestamp": time.isoformat(),
+                "type": random.choice(trade_types),
+                "shares": shares,
+                "account": "jeffrey_hl",
                 "price": price,
                 "total_value": round(shares * price, 2)
             })
