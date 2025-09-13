@@ -1,8 +1,8 @@
 {
   "framework": "vite",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist",
+  "installCommand": "cd frontend && npm install --legacy-peer-deps",
   "devCommand": "npm run dev",
   "env": {
     "VITE_PRIVY_APP_ID": "cmf0n2ra100qzl20b4gxr8ql0"
