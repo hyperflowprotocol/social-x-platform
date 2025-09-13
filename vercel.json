@@ -4,19 +4,10 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "devCommand": "npm run dev",
-  "functions": {
-    "api/**/*.py": {
-      "runtime": "python3.9"
-    }
-  },
   "env": {
     "VITE_PRIVY_APP_ID": "cmf0n2ra100qzl20b4gxr8ql0"
   },
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
     {
       "source": "/auth/privy-callback",
       "destination": "/index.html"
