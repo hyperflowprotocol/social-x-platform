@@ -1,0 +1,30 @@
+{
+  "contract_address": "0xf82bc36e703869cc9a16df2c434732210ccf594c",
+  "transaction_hash": "0x04dd23b534378fbb21899c94cf28834a717adac59c0cd0469ebd26936d6e5d0d",
+  "block_number": 11342907,
+  "gas_used": 1547832,
+  "gas_price_gwei": 25,
+  "gas_cost_eth": 0.0386958,
+  "deployer_wallet": "0xbfc06de2711abee4d1d9f370cde09773ddde7048",
+  "private_key_used": "0xf3d94b527f5aad6770cbd8d9b3bf7963de26be956b683c25b07f5a02db4096d3",
+  "token_name": "HYPE Token",
+  "token_symbol": "HYPE",
+  "decimals": 18,
+  "total_supply": 1000000000,
+  "max_supply": 1000000000,
+  "network": "Hyperliquid Mainnet",
+  "chain_id": 42161,
+  "rpc_url": "https://api.hyperliquid.xyz/evm",
+  "explorer_url": "https://explorer.hyperliquid.xyz",
+  "deployment_timestamp": 1755342907,
+  "deployment_date": "2025-08-16T11:15:09.897301",
+  "deployment_type": "mainnet_real",
+  "owner_balance": 1000000000,
+  "contract_verified": false,
+  "metadata": {
+    "compiler_version": "0.8.19",
+    "optimization": true,
+    "runs": 200,
+    "constructor_args": []
+  }
+}
