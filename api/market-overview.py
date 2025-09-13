@@ -30,11 +30,8 @@ class handler(BaseHTTPRequestHandler):
         jeffrey_volume = random.randint(3000, 8000)
         total_volume_24h = diero_volume + jerome_volume + jeffrey_volume
         
-        # Combined active holders from all accounts
-        diero_holders = random.randint(120, 180)
-        jerome_holders = random.randint(200, 300)
-        jeffrey_holders = random.randint(350, 500)
-        active_traders = diero_holders + jerome_holders + jeffrey_holders
+        # Active traders - keep it small and realistic
+        active_traders = 20
         
         # Overall market trending change
         trending_change_val = round(random.uniform(-5.0, 35.0), 1)
