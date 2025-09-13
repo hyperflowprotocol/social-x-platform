@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import './Launch.css';
 
+// Force update: 2025-09-13T12:27:02.165Z
+
 const Launch = () => {
   const { ready, authenticated, user, logout } = usePrivy();
   const [isLaunching, setIsLaunching] = useState(false);
