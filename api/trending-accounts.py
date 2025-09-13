@@ -23,6 +23,15 @@ class handler(BaseHTTPRequestHandler):
         volume_24h = random.randint(1500, 4000)
         holders = random.randint(120, 180)
         
+        # Jerome.hl data - separate dynamic values
+        jerome_price_variance = random.uniform(-0.008, 0.012)  # ±6% of 0.15
+        jerome_current_price = round(0.15 + jerome_price_variance, 4)
+        jerome_total_supply = 80000
+        jerome_market_cap = round(jerome_current_price * jerome_total_supply)
+        jerome_daily_change = round(random.uniform(-15.0, 60.0), 1)
+        jerome_volume_24h = random.randint(2000, 6000)
+        jerome_holders = random.randint(200, 300)
+        
         accounts = [{
             "name": "diero_hl", 
             "handle": "diero_hl", 
@@ -32,6 +41,15 @@ class handler(BaseHTTPRequestHandler):
             "daily_change": daily_change,
             "holders": holders,
             "volume_24h": volume_24h
+        }, {
+            "name": "Jerome.hl",
+            "handle": "jeromeliquid", 
+            "avatar": "https://amethyst-defensive-marsupial-68.mypinata.cloud/ipfs/bafkreieyky45yo4dwuvjg5ffu4lpncrgjlpr5m7ogp65jhir3vv7uw423y",
+            "price_per_token": jerome_current_price,
+            "market_cap": jerome_market_cap,
+            "daily_change": jerome_daily_change,
+            "holders": jerome_holders,
+            "volume_24h": jerome_volume_24h
         }]
         
         response = {"accounts": accounts}
