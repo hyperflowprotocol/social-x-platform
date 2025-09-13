@@ -156,6 +156,83 @@ const Launch = () => {
     }
   };
 
+  // Synchronous balance refresh function with retry logic
+  const fetchFreshBalances = async (walletAddress) => {
+    console.log('🔄 FETCHING FRESH BALANCES for:', walletAddress);
+    
+    const freshBalances = {
+      hype: '0',
+      usdc: '0', 
+      hyperevmUsdt0: '0'
+    };
+    
+    // Fetch HYPE balance on HyperEVM
+    try {
+      const hypeProvider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
+      const hypeBalance = await hypeProvider.getBalance(walletAddress);
+      freshBalances.hype = ethers.formatEther(hypeBalance);
+      console.log('✅ Fresh HYPE balance:', freshBalances.hype);
+    } catch (error) {
+      console.error('❌ Failed to fetch fresh HYPE balance:', error.message);
+    }
+    
+    // Fetch USDC balance on Base with fallback RPCs
+    let baseProvider = null;
+    for (const rpc of LAUNCH_CONFIG.BASE_RPCS) {
+      try {
+        console.log('🔄 Trying Base RPC for fresh balance:', rpc);
+        baseProvider = new ethers.JsonRpcProvider(rpc);
+        const usdcContract = new ethers.Contract(LAUNCH_CONFIG.BASE_USDC, ERC20_ABI, baseProvider);
+        
+        const [usdcBalance, usdcDecimals] = await Promise.all([
+          usdcContract.balanceOf(walletAddress),
+          usdcContract.decimals().catch(() => 6)
+        ]);
+        
+        freshBalances.usdc = ethers.formatUnits(usdcBalance, usdcDecimals);
+        console.log('✅ Fresh USDC balance:', freshBalances.usdc, 'via', rpc);
+        break;
+      } catch (error) {
+        console.error(`❌ Base RPC ${rpc} failed for fresh balance:`, error.message);
+        continue;
+      }
+    }
+    
+    // Fetch USDT0 balance on HyperEVM with retry logic (3 attempts)
+    let usdt0Attempts = 0;
+    const maxUsdt0Attempts = 3;
+    
+    while (usdt0Attempts < maxUsdt0Attempts) {
+      try {
+        console.log(`🔄 Attempting USDT0 balance fetch (attempt ${usdt0Attempts + 1}/${maxUsdt0Attempts})`);
+        const hypeProvider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
+        const usdt0Contract = new ethers.Contract(LAUNCH_CONFIG.HYPEREVM_USDT0, ERC20_ABI, hypeProvider);
+        
+        const [usdt0Balance, usdt0Decimals] = await Promise.all([
+          usdt0Contract.balanceOf(walletAddress),
+          usdt0Contract.decimals().catch(() => 6)
+        ]);
+        
+        freshBalances.hyperevmUsdt0 = ethers.formatUnits(usdt0Balance, usdt0Decimals);
+        console.log('✅ Fresh USDT0 balance:', freshBalances.hyperevmUsdt0, `(attempt ${usdt0Attempts + 1})`);
+        break; // Success, exit retry loop
+      } catch (error) {
+        usdt0Attempts++;
+        console.error(`❌ USDT0 balance fetch attempt ${usdt0Attempts} failed:`, error.message);
+        
+        if (usdt0Attempts < maxUsdt0Attempts) {
+          console.log(`🔄 Retrying USDT0 balance fetch in 1 second...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          console.error('❌ All USDT0 balance fetch attempts failed, using 0');
+        }
+      }
+    }
+    
+    console.log('🔥 FINAL FRESH BALANCES:', freshBalances);
+    return freshBalances;
+  };
+
   const handleLaunchToken = async () => {
     if (!hasTwitter) {
       alert('Please connect your X account first!');
@@ -173,40 +250,48 @@ const Launch = () => {
       return;
     }
     
-    // Detect which chain user wants to use based on their balances
+    console.log('🚀 LAUNCH TOKEN INITIATED');
+    console.log('📊 Current state balances:', balances);
+    
+    // CRITICAL FIX: Fetch fresh balances synchronously instead of using stale React state
+    const freshBalances = await fetchFreshBalances(wallet.address);
+    
+    // Detect which chain user wants to use based on FRESH balances
     let chainToUse = 'none';
     let liquidityToken = '';
     let liquidityAmount = '0';
     
-    console.log('Checking balances for launch:');
-    console.log('USDC balance:', balances.usdc, 'parsed:', parseFloat(balances.usdc));
-    console.log('HyperEVM USDT0 balance:', balances.hyperevmUsdt0, 'parsed:', parseFloat(balances.hyperevmUsdt0));
-    console.log('HYPE balance:', balances.hype, 'parsed:', parseFloat(balances.hype));
+    console.log('🎯 TOKEN SELECTION WITH FRESH BALANCES:');
+    console.log('Fresh USDC balance:', freshBalances.usdc, 'parsed:', parseFloat(freshBalances.usdc));
+    console.log('Fresh USDT0 balance:', freshBalances.hyperevmUsdt0, 'parsed:', parseFloat(freshBalances.hyperevmUsdt0));
+    console.log('Fresh HYPE balance:', freshBalances.hype, 'parsed:', parseFloat(freshBalances.hype));
     
     // Gas-aware token selection - USDT0 first, then check Base ETH for USDC, then HYPE with gas reserve
-    if (parseFloat(balances.hyperevmUsdt0) > 0) {
+    if (parseFloat(freshBalances.hyperevmUsdt0) > 0) {
       // Priority 1: USDT0 on HyperEVM (uses HYPE for gas, so always works)
       chainToUse = 'hyperevm';
       liquidityToken = 'USDT0';
-      liquidityAmount = parseFloat(balances.hyperevmUsdt0).toFixed(6);
-    } else if (parseFloat(balances.usdc) > 0) {
+      liquidityAmount = parseFloat(freshBalances.hyperevmUsdt0).toFixed(6);
+      console.log('🥇 SELECTED: USDT0 on HyperEVM -', liquidityAmount, 'USDT0');
+    } else if (parseFloat(freshBalances.usdc) > 0) {
       // Priority 2: USDC on Base (but need to check Base ETH for gas)
       chainToUse = 'base';
       liquidityToken = 'USDC';
-      liquidityAmount = parseFloat(balances.usdc).toFixed(6);
-    } else if (parseFloat(balances.hype) > 0) {
+      liquidityAmount = parseFloat(freshBalances.usdc).toFixed(6);
+      console.log('🥈 SELECTED: USDC on Base -', liquidityAmount, 'USDC');
+    } else if (parseFloat(freshBalances.hype) > 0) {
       // Priority 3: HYPE on HyperEVM (will reserve gas properly)
       chainToUse = 'hyperevm';
       liquidityToken = 'HYPE';
       // Will calculate actual sendable amount later (balance minus gas)
       liquidityAmount = 'calculated_later';
+      console.log('🥉 SELECTED: HYPE on HyperEVM - calculated later');
+    } else {
+      console.log('❌ NO FUNDS DETECTED - will do free launch');
     }
     
-    console.log('🎯 TOKEN SELECTION PRIORITY:');
-    console.log('1st: USDT0 on HyperEVM:', balances.hyperevmUsdt0);
-    console.log('2nd: USDC on Base:', balances.usdc);
-    console.log('3rd: HYPE on HyperEVM:', balances.hype);
-    console.log('✅ Selected - Chain:', chainToUse, 'Token:', liquidityToken, 'Amount:', liquidityAmount);
+    console.log('🎯 FINAL TOKEN SELECTION:');
+    console.log('Chain:', chainToUse, 'Token:', liquidityToken, 'Amount:', liquidityAmount);
     
     // If no funds detected, fallback to HyperEVM with 0 value
     if (chainToUse === 'none') {
@@ -249,7 +334,7 @@ const Launch = () => {
               params: [{
                 chainId: '0x2105',
                 chainName: 'Base',
-                rpcUrls: [LAUNCH_CONFIG.BASE_RPC],
+                rpcUrls: [LAUNCH_CONFIG.BASE_RPCS[0]],
                 nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
                 blockExplorerUrls: ['https://basescan.org']
               }]
@@ -377,8 +462,19 @@ const Launch = () => {
       
       console.log('Launch transaction sent:', launchTx);
       
-      const provider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
-      const receipt = await provider.waitForTransaction(launchTx);
+      // Use correct provider based on the chain used for the transaction
+      let waitProvider;
+      if (chainToUse === 'base') {
+        // Use Base provider for Base transactions
+        waitProvider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.BASE_RPCS[0]);
+        console.log('🔄 Waiting for Base transaction confirmation...');
+      } else {
+        // Use HyperEVM provider for HyperEVM transactions
+        waitProvider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
+        console.log('🔄 Waiting for HyperEVM transaction confirmation...');
+      }
+      
+      const receipt = await waitProvider.waitForTransaction(launchTx);
       
       if (receipt && receipt.status === 1) {
         const liquidityMsg = liquidityAmount === '0.000000' ? 'Free launch' : `${liquidityToken} contributed`;
