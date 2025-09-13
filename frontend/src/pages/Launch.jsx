@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import './Launch.css';
 
-// Social X Token Launch Configuration
 const LAUNCH_CONFIG = {
   TREASURY_ADDRESS: '0x25B21833Aa899Bfc5FE6C145f42112b1D618e82a',
-  TOKENS_PER_HYPE: 20000, // 1 HYPE = 20,000 Social X tokens
-  INITIAL_SUPPLY: 100000000, // 100M total supply
+  TOKENS_PER_HYPE: 20000,
+  INITIAL_SUPPLY: 100000000,
   HYPEREVM_RPC: 'https://rpc.hyperliquid.xyz/evm',
   HYPEREVM_CHAIN_ID: 999
 };
@@ -19,23 +18,18 @@ const Launch = () => {
   const navigate = useNavigate();
   const [isLinking, setIsLinking] = useState(false);
   const [isLaunching, setIsLaunching] = useState(false);
-  // Removed balance and amount states for simplified launch
   
-  // Check if user has Twitter/X linked
   const twitterAccount = user?.linkedAccounts?.find(account => 
     (account?.type === 'oauth' && ['twitter', 'x'].includes(account?.provider)) ||
     ['twitter', 'twitter_oauth', 'oauth_twitter'].includes(account?.type)
   );
   
   const hasTwitter = !!twitterAccount || !!user?.twitter || !!user?.twitterUsername;
-  const twitterUsername = twitterAccount?.username || twitterAccount?.handle || twitterAccount?.screenName || user?.twitter?.username || user?.twitterUsername;
+  const twitterUsername = twitterAccount?.username || twitterAccount?.handle || user?.twitter?.username || user?.twitterUsername;
   const twitterProfileImage = twitterAccount?.profilePictureUrl || twitterAccount?.picture;
   
-  // Get wallet address
   const activeWallet = wallets?.[0];
   const walletAddress = activeWallet?.address || user?.wallet?.address;
-
-  // Removed balance checking - not needed for simplified launch
 
   const handleConnectTwitter = async (e) => {
     e?.preventDefault?.();
@@ -83,11 +77,6 @@ const Launch = () => {
       return;
     }
     
-    // Simplified launch - always send 0 HYPE
-    const amountToSend = '0';
-    const hypeAmount = 0;
-    
-    // Show launch confirmation
     const confirmLaunch = window.confirm(
       `🚀 Launch Token for @${twitterUsername}\n\n` +
       `Token Name: ${twitterUsername} Token\n` +
@@ -103,18 +92,15 @@ const Launch = () => {
     setIsLaunching(true);
     
     try {
-      // Get wallet provider
       const walletProvider = await wallet.getEthereumProvider();
       
-      // Switch to HyperEVM chain
       try {
         await walletProvider.request({
           method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x3E7' }] // 999 in hex for HyperEVM
+          params: [{ chainId: '0x3E7' }]
         });
       } catch (switchErr) {
         if (switchErr.code === 4902) {
-          // Add HyperEVM chain if not present
           await walletProvider.request({
             method: 'wallet_addEthereumChain',
             params: [{
@@ -128,26 +114,22 @@ const Launch = () => {
         }
       }
       
-      // Send the specified amount to treasury (can be 0)
-      const amountWei = ethers.parseEther(amountToSend);
       const launchTx = await walletProvider.request({
         method: 'eth_sendTransaction',
         params: [{
           from: wallet.address,
           to: LAUNCH_CONFIG.TREASURY_ADDRESS,
-          value: '0x' + amountWei.toString(16), // Convert to hex
-          data: '0x' // No additional data needed
+          value: '0x0',
+          data: '0x'
         }]
       });
       
       console.log('Launch transaction sent:', launchTx);
       
-      // Wait for transaction confirmation
       const provider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
       const receipt = await provider.waitForTransaction(launchTx);
       
       if (receipt && receipt.status === 1) {
-        // Success message
         alert(
           `✅ Token Successfully Launched!\n\n` +
           `Token: ${twitterUsername} Token ($${twitterUsername.toUpperCase()})\n\n` +
@@ -155,7 +137,6 @@ const Launch = () => {
           `Your token is now live on HyperEVM!`
         );
         
-        // Navigate to markets
         navigate('/markets');
       } else {
         throw new Error('Transaction failed');
@@ -194,7 +175,6 @@ const Launch = () => {
       <div className="container">
         <h1 className="page-title">Launch Your Account</h1>
         
-        {/* Connect Wallet Section */}
         {!authenticated && (
           <section className="connect-section">
             <div className="connect-card card">
@@ -207,7 +187,6 @@ const Launch = () => {
           </section>
         )}
 
-        {/* Connect Twitter Section */}
         {authenticated && (
           <section className="connect-section">
             <div className="connect-card card">
@@ -248,7 +227,6 @@ const Launch = () => {
           </section>
         )}
 
-        {/* Launch Account Section */}
         {authenticated && hasTwitter && (
           <section className="launch-section">
             <div className="launch-card card">
