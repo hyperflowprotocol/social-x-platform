@@ -234,11 +234,6 @@ const Launch = () => {
   };
 
   const handleLaunchToken = async () => {
-    if (!hasTwitter) {
-      alert('Please connect your X account first!');
-      return;
-    }
-    
     if (!authenticated || !wallets || wallets.length === 0) {
       await login();
       return;
