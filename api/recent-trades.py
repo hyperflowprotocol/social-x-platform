@@ -57,6 +57,22 @@ class handler(BaseHTTPRequestHandler):
                 "total_value": round(shares * price, 2)
             })
         
+        # Generate trades for @crypto_ronpaul
+        for i in range(2):
+            time = base_time - timedelta(minutes=random.randint(1, 180))
+            shares = random.randint(80, 500)  # High volumes for crypto trader
+            base_price = 0.16  # Base bittards price
+            price = round(base_price + random.uniform(-0.008, 0.013), 4)  # Dynamic ±6.5%
+            trades.append({
+                "id": f"bittards_trade_{i+1}",
+                "timestamp": time.isoformat(),
+                "type": random.choice(trade_types),
+                "shares": shares,
+                "account": "crypto_ronpaul",
+                "price": price,
+                "total_value": round(shares * price, 2)
+            })
+        
         sorted_trades = sorted(trades, key=lambda x: x['timestamp'], reverse=True)
         response = {"trades": sorted_trades}
         
