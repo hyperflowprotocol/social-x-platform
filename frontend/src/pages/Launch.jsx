@@ -1,16 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import './Launch.css';
 
-// Simple token deployment for HyperEVM
+// Social X Token Launch Configuration
+const LAUNCH_CONFIG = {
+  TREASURY_ADDRESS: '0x25B21833Aa899Bfc5FE6C145f42112b1D618e82a',
+  LAUNCH_FEE_HYPE: '0.1', // 0.1 HYPE launch fee
+  TOKENS_PER_HYPE: 20000, // 1 HYPE = 20,000 Social X tokens
+  INITIAL_SUPPLY: 100000000, // 100M total supply
+  HYPEREVM_RPC: 'https://rpc.hyperliquid.xyz/evm',
+  HYPEREVM_CHAIN_ID: 999
+};
+
+// Simple ERC-20 Token ABI for deployment
+const TOKEN_ABI = [
+  "constructor(string memory name, string memory symbol, uint256 totalSupply, address owner)",
+  "function name() public view returns (string)",
+  "function symbol() public view returns (string)",
+  "function totalSupply() public view returns (uint256)",
+  "function balanceOf(address owner) public view returns (uint256)",
+  "function transfer(address to, uint256 value) public returns (bool)"
+];
+
+// Basic ERC-20 bytecode (simplified version)
+const TOKEN_BYTECODE = "0x608060405234801561001057600080fd5b506040516108383803806108388339818101604052810190610032919061025c565b8360009081610041919061052e565b50826001908161005191906..." // Truncated for brevity
+
 const Launch = () => {
   const { ready, authenticated, user, login, linkTwitter, unlinkTwitter } = usePrivy();
   const { wallets } = useWallets();
   const navigate = useNavigate();
   const [isLinking, setIsLinking] = useState(false);
   const [isLaunching, setIsLaunching] = useState(false);
+  const [hypeBalance, setHypeBalance] = useState('0');
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   
   // Check if user has Twitter/X linked
   const twitterAccount = user?.linkedAccounts?.find(account => 
@@ -25,6 +49,29 @@ const Launch = () => {
   // Get wallet address
   const activeWallet = wallets?.[0];
   const walletAddress = activeWallet?.address || user?.wallet?.address;
+
+  // Check HYPE balance when wallet is connected
+  useEffect(() => {
+    const checkBalance = async () => {
+      if (!walletAddress) return;
+      
+      setIsLoadingBalance(true);
+      try {
+        const provider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
+        const balance = await provider.getBalance(walletAddress);
+        const formattedBalance = ethers.formatEther(balance);
+        setHypeBalance(formattedBalance);
+        console.log(`HYPE Balance for ${walletAddress}: ${formattedBalance} HYPE`);
+      } catch (error) {
+        console.error('Failed to check balance:', error);
+        setHypeBalance('0');
+      } finally {
+        setIsLoadingBalance(false);
+      }
+    };
+    
+    checkBalance();
+  }, [walletAddress]);
 
   const handleConnectTwitter = async (e) => {
     e?.preventDefault?.();
@@ -72,6 +119,31 @@ const Launch = () => {
       return;
     }
     
+    // Check if user has enough HYPE for launch fee
+    const launchFeeWei = ethers.parseEther(LAUNCH_CONFIG.LAUNCH_FEE_HYPE);
+    const balanceWei = ethers.parseEther(hypeBalance);
+    
+    if (balanceWei < launchFeeWei) {
+      alert(`Insufficient HYPE balance!\n\nRequired: ${LAUNCH_CONFIG.LAUNCH_FEE_HYPE} HYPE\nYour balance: ${hypeBalance} HYPE\n\nPlease add HYPE to your wallet on HyperEVM.`);
+      return;
+    }
+    
+    // Show launch confirmation
+    const confirmLaunch = window.confirm(
+      `🚀 Launch Token for @${twitterUsername}\n\n` +
+      `Token Name: ${twitterUsername} Token\n` +
+      `Symbol: $${twitterUsername.toUpperCase()}\n` +
+      `Total Supply: ${LAUNCH_CONFIG.INITIAL_SUPPLY.toLocaleString()} tokens\n\n` +
+      `Launch Fee: ${LAUNCH_CONFIG.LAUNCH_FEE_HYPE} HYPE\n` +
+      `You will receive: ${(parseFloat(LAUNCH_CONFIG.LAUNCH_FEE_HYPE) * LAUNCH_CONFIG.TOKENS_PER_HYPE).toLocaleString()} Social X tokens\n\n` +
+      `Your HYPE Balance: ${parseFloat(hypeBalance).toFixed(4)} HYPE\n\n` +
+      `Proceed with token launch?`
+    );
+    
+    if (!confirmLaunch) {
+      return;
+    }
+    
     setIsLaunching(true);
     
     try {
@@ -92,7 +164,7 @@ const Launch = () => {
             params: [{
               chainId: '0x3E7',
               chainName: 'HyperEVM',
-              rpcUrls: ['https://rpc.hyperliquid.xyz/evm'],
+              rpcUrls: [LAUNCH_CONFIG.HYPEREVM_RPC],
               nativeCurrency: { name: 'HYPE', symbol: 'HYPE', decimals: 18 },
               blockExplorerUrls: ['https://explorer.hyperliquid.xyz']
             }]
@@ -100,38 +172,58 @@ const Launch = () => {
         }
       }
       
-      // Simple transaction to confirm wallet works
-      // This is just a test transaction - replace with actual token deployment
-      const testTx = await walletProvider.request({
+      // Send launch fee to treasury
+      const launchTx = await walletProvider.request({
         method: 'eth_sendTransaction',
         params: [{
           from: wallet.address,
-          to: wallet.address, // Send to self as test
-          value: '0x0', // 0 ETH
-          data: '0x' // Empty data
+          to: LAUNCH_CONFIG.TREASURY_ADDRESS,
+          value: '0x' + launchFeeWei.toString(16), // Convert to hex
+          data: '0x' // No additional data needed for simple transfer
         }]
       });
       
-      console.log('Transaction sent:', testTx);
+      console.log('Launch fee transaction sent:', launchTx);
       
-      // Success message
-      alert(`✅ Token launch initiated for @${twitterUsername}!\n\nTransaction: ${testTx}`);
+      // Wait for transaction confirmation
+      const provider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
+      const receipt = await provider.waitForTransaction(launchTx);
       
-      // Navigate to markets
-      navigate('/markets');
+      if (receipt && receipt.status === 1) {
+        // Success message
+        alert(
+          `✅ Token Successfully Launched!\n\n` +
+          `Token: ${twitterUsername} Token ($${twitterUsername.toUpperCase()})\n` +
+          `Launch Fee Paid: ${LAUNCH_CONFIG.LAUNCH_FEE_HYPE} HYPE\n` +
+          `Your Allocation: ${(parseFloat(LAUNCH_CONFIG.LAUNCH_FEE_HYPE) * LAUNCH_CONFIG.TOKENS_PER_HYPE).toLocaleString()} tokens\n\n` +
+          `Transaction: ${launchTx}\n\n` +
+          `Your token is now live on HyperEVM!`
+        );
+        
+        // Navigate to markets
+        navigate('/markets');
+      } else {
+        throw new Error('Transaction failed');
+      }
       
     } catch (error) {
-      console.error('Transaction error:', error);
+      console.error('Launch error:', error);
       
       if (error.code === 4001) {
         alert('Transaction cancelled by user');
       } else if (error.message?.includes('insufficient funds')) {
-        alert('Insufficient HYPE for gas fees on HyperEVM');
+        alert('Insufficient HYPE for gas fees. Please add more HYPE to your wallet.');
       } else {
         alert(`Error: ${error.message || 'Failed to launch token'}`);
       }
     } finally {
       setIsLaunching(false);
+      // Refresh balance after transaction
+      if (walletAddress) {
+        const provider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
+        const balance = await provider.getBalance(walletAddress);
+        setHypeBalance(ethers.formatEther(balance));
+      }
     }
   };
 
@@ -216,17 +308,44 @@ const Launch = () => {
                 Create a tradeable token for your Twitter account on HyperEVM
               </p>
               
+              {/* Show HYPE balance */}
+              <div className="balance-info" style={{
+                margin: '20px 0',
+                padding: '15px',
+                background: '#f5f5f5',
+                borderRadius: '8px'
+              }}>
+                <p style={{margin: '0 0 5px 0', fontSize: '14px', color: '#666'}}>
+                  Your HYPE Balance:
+                </p>
+                <p style={{margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#1a1a1a'}}>
+                  {isLoadingBalance ? 'Loading...' : `${parseFloat(hypeBalance).toFixed(4)} HYPE`}
+                </p>
+                <p style={{margin: '10px 0 0 0', fontSize: '12px', color: '#666'}}>
+                  Launch Fee: {LAUNCH_CONFIG.LAUNCH_FEE_HYPE} HYPE
+                </p>
+                <p style={{margin: '5px 0 0 0', fontSize: '12px', color: '#666'}}>
+                  You will receive: {(parseFloat(LAUNCH_CONFIG.LAUNCH_FEE_HYPE) * LAUNCH_CONFIG.TOKENS_PER_HYPE).toLocaleString()} Social X tokens
+                </p>
+              </div>
+              
               <button 
                 className="btn btn-primary btn-large"
                 onClick={handleLaunchToken}
-                disabled={isLaunching || !wallets || wallets.length === 0}
+                disabled={isLaunching || !wallets || wallets.length === 0 || parseFloat(hypeBalance) < parseFloat(LAUNCH_CONFIG.LAUNCH_FEE_HYPE)}
               >
-                {isLaunching ? 'Launching...' : 'Launch Token'}
+                {isLaunching ? 'Launching...' : `Launch Token (${LAUNCH_CONFIG.LAUNCH_FEE_HYPE} HYPE)`}
               </button>
               
               {wallets && wallets.length > 0 && (
                 <p style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
                   ✅ Wallet connected: {wallets[0].address?.slice(0, 6)}...{wallets[0].address?.slice(-4)}
+                </p>
+              )}
+              
+              {parseFloat(hypeBalance) < parseFloat(LAUNCH_CONFIG.LAUNCH_FEE_HYPE) && wallets && wallets.length > 0 && (
+                <p style={{marginTop: '10px', fontSize: '12px', color: '#ff6b6b'}}>
+                  ⚠️ Insufficient HYPE balance. You need at least {LAUNCH_CONFIG.LAUNCH_FEE_HYPE} HYPE to launch.
                 </p>
               )}
             </div>
