@@ -1,29 +1,97 @@
 .launch-page {
   min-height: calc(100vh - 140px);
-  padding: 40px 20px;
+  padding: 20px;
   background: #f8f9fa;
 }
 
 .launch-page .container {
-  max-width: 500px;
+  max-width: 480px;
   margin: 0 auto;
 }
 
-/* Twitter Account Card */
-.twitter-account-card {
-  background: white;
-  border-radius: 16px;
-  padding: 30px;
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
   text-align: center;
-  position: relative;
   margin-bottom: 30px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  color: #1a1a1a;
 }
 
-.account-avatar {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 15px;
+/* Connect Card - When not authenticated */
+.connect-card {
+  background: white;
+  border-radius: 20px;
+  padding: 35px 25px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.connect-card h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #1a1a1a;
+}
+
+.connect-card p {
+  color: #666;
+  font-size: 15px;
+  margin-bottom: 25px;
+}
+
+.connect-button {
+  width: 100%;
+  max-width: 200px;
+  padding: 14px 24px;
+  background: #1a1a1a;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.connect-button:hover {
+  background: #000;
+  transform: translateY(-1px);
+}
+
+/* Twitter Card */
+.twitter-card {
+  background: white;
+  border-radius: 20px;
+  padding: 30px 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.twitter-card h2 {
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 25px;
+  color: #1a1a1a;
+}
+
+.twitter-connected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.twitter-avatar {
+  width: 60px;
+  height: 60px;
+}
+
+.twitter-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .avatar-placeholder {
@@ -35,87 +103,88 @@
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 32px;
+  font-size: 24px;
   font-weight: bold;
 }
 
-.account-username {
-  font-size: 20px;
+.twitter-username {
+  font-size: 18px;
   font-weight: 600;
   color: #1a1a1a;
+}
+
+.disconnect-button {
+  padding: 10px 30px;
+  background: white;
+  color: #1a1a1a;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 10px;
+}
+
+.disconnect-button:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+.twitter-not-connected {
+  text-align: center;
+}
+
+.twitter-not-connected p {
+  color: #666;
+  font-size: 14px;
   margin-bottom: 20px;
 }
 
-.dropdown-container {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-}
-
-.dropdown-toggle {
-  background: none;
+.connect-twitter-button {
+  padding: 12px 30px;
+  background: #1DA1F2;
+  color: white;
   border: none;
-  font-size: 24px;
-  color: #666;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
-  padding: 5px 10px;
+  transition: all 0.2s;
 }
 
-.dropdown-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
+.connect-twitter-button:hover {
+  background: #1a8cd8;
+  transform: translateY(-1px);
+}
+
+/* Launch Card */
+.launch-card {
   background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  margin-top: 5px;
-  min-width: 150px;
-  z-index: 100;
-}
-
-.dropdown-menu button {
-  width: 100%;
-  padding: 12px 20px;
-  background: none;
-  border: none;
-  text-align: left;
-  cursor: pointer;
-  font-size: 14px;
-  color: #333;
-  transition: background 0.2s;
-}
-
-.dropdown-menu button:hover {
-  background: #f5f5f5;
-}
-
-/* Launch Section */
-.launch-section {
-  background: white;
-  border-radius: 16px;
-  padding: 40px 30px;
+  border-radius: 20px;
+  padding: 35px 25px;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
-.launch-section h1 {
-  font-size: 28px;
+.launch-card h2 {
+  font-size: 22px;
+  font-weight: 700;
   margin-bottom: 12px;
   color: #1a1a1a;
 }
 
-.launch-description {
+.launch-card p {
   color: #666;
-  font-size: 16px;
+  font-size: 15px;
   margin-bottom: 30px;
   line-height: 1.5;
 }
 
 .launch-button {
   width: 100%;
-  padding: 16px;
+  max-width: 200px;
+  padding: 14px 24px;
   background: #1a1a1a;
   color: white;
   border: none;
@@ -123,8 +192,7 @@
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s, background 0.3s;
-  margin-bottom: 20px;
+  transition: all 0.2s;
 }
 
 .launch-button:hover:not(:disabled) {
@@ -133,55 +201,20 @@
 }
 
 .launch-button:disabled {
-  background: #666;
+  background: #999;
   cursor: not-allowed;
+  opacity: 0.7;
 }
 
-.wallet-status {
-  font-size: 14px;
-  color: #4caf50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-/* Connect Prompt */
-.connect-prompt {
+.loading-card {
   background: white;
-  border-radius: 16px;
-  padding: 40px 30px;
+  border-radius: 20px;
+  padding: 60px 25px;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.connect-prompt h1 {
-  font-size: 28px;
-  margin-bottom: 16px;
-  color: #1a1a1a;
-}
-
-.connect-prompt p {
-  color: #666;
-  font-size: 16px;
-  margin-bottom: 24px;
-}
-
-.connect-status {
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.connect-status p {
-  margin: 8px 0;
-  font-size: 14px;
-  color: #d32f2f;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
 .loading {
-  text-align: center;
-  padding: 100px 20px;
-  font-size: 18px;
+  font-size: 16px;
   color: #666;
 }
