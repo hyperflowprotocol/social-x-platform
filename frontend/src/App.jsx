@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { PrivyProvider, usePrivy } from '@privy-io/react-auth';
+import { Analytics } from '@vercel/analytics/react';
 import Markets from './pages/Markets';
 import Portfolio from './pages/Portfolio';
 import Launch from './pages/Launch';
@@ -292,6 +293,7 @@ function App() {
       <Router>
         <AppLayout />
       </Router>
+      <Analytics />
     </PrivyProvider>
   );
 }
