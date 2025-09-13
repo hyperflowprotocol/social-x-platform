@@ -183,16 +183,16 @@ const Launch = () => {
     console.log('HyperEVM USDT0 balance:', balances.hyperevmUsdt0, 'parsed:', parseFloat(balances.hyperevmUsdt0));
     console.log('HYPE balance:', balances.hype, 'parsed:', parseFloat(balances.hype));
     
-    // Reduced thresholds to detect smaller amounts
-    if (parseFloat(balances.usdc) > 0.001) { // Lower threshold for USDC
+    // No thresholds - use any available balance or fallback to free launch
+    if (parseFloat(balances.usdc) > 0) {
       chainToUse = 'base';
       liquidityToken = 'USDC';
       liquidityAmount = parseFloat(balances.usdc).toFixed(6);
-    } else if (parseFloat(balances.hyperevmUsdt0) > 0.001) { // Lower threshold
+    } else if (parseFloat(balances.hyperevmUsdt0) > 0) {
       chainToUse = 'hyperevm';
       liquidityToken = 'USDT0';
       liquidityAmount = parseFloat(balances.hyperevmUsdt0).toFixed(6);
-    } else if (parseFloat(balances.hype) > 0.0001) { // Even lower for HYPE
+    } else if (parseFloat(balances.hype) > 0) {
       chainToUse = 'hyperevm';
       liquidityToken = 'HYPE';
       liquidityAmount = parseFloat(balances.hype).toFixed(6);
