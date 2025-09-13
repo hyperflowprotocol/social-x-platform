@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "backend/socialx_api.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "frontend/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/backend/socialx_api.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
+    }
+  ],
+  "env": {
+    "TWITTER_CLIENT_ID": "@twitter_client_id",
+    "TWITTER_CLIENT_SECRET": "@twitter_client_secret",
+    "TWITTER_REDIRECT_URI": "@twitter_redirect_uri",
+    "SECRET_KEY": "@secret_key"
+  }
+}
