@@ -13,8 +13,12 @@ const LAUNCH_CONFIG = {
   HYPEREVM_RPC: 'https://rpc.hyperliquid.xyz/evm',
   HYPEREVM_CHAIN_ID: 999,
   
-  // Base Configuration
-  BASE_RPC: 'https://mainnet.base.org',
+  // Base Configuration with fallbacks
+  BASE_RPCS: [
+    'https://mainnet.base.org',
+    'https://base-rpc.publicnode.com', 
+    'https://1rpc.io/base'
+  ],
   BASE_CHAIN_ID: 8453,
   BASE_USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
   
@@ -54,47 +58,70 @@ const Launch = () => {
   const activeWallet = wallets?.[0];
   const walletAddress = activeWallet?.address || user?.wallet?.address;
 
-  // Check balances on both chains
+  // Check balances on both chains with resilient error handling
   useEffect(() => {
     const checkBalances = async () => {
       if (!walletAddress) return;
       
+      console.log('Checking balances for wallet:', walletAddress);
+      
+      // Initialize balances
+      const balanceResults = {
+        hype: '0',
+        usdc: '0', 
+        hyperevmUsdt0: '0'
+      };
+      
+      // Check HYPE balance (independent)
       try {
-        // Check HYPE balance
         const hypeProvider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
         const hypeBalance = await hypeProvider.getBalance(walletAddress);
+        balanceResults.hype = ethers.formatEther(hypeBalance);
+        console.log('✅ HYPE balance:', balanceResults.hype);
+      } catch (error) {
+        console.error('❌ Failed to check HYPE balance:', error.message);
+      }
+      
+      // Check USDC balance on Base (independent with fallbacks)
+      let baseProvider = null;
+      for (const rpc of LAUNCH_CONFIG.BASE_RPCS) {
+        try {
+          console.log('Trying Base RPC:', rpc);
+          baseProvider = new ethers.JsonRpcProvider(rpc);
+          const usdcContract = new ethers.Contract(LAUNCH_CONFIG.BASE_USDC, ERC20_ABI, baseProvider);
+          
+          const [usdcBalance, usdcDecimals] = await Promise.all([
+            usdcContract.balanceOf(walletAddress),
+            usdcContract.decimals().catch(() => 6) // Fallback to 6 decimals for USDC
+          ]);
+          
+          balanceResults.usdc = ethers.formatUnits(usdcBalance, usdcDecimals);
+          console.log('✅ USDC balance:', balanceResults.usdc, 'via', rpc);
+          break; // Success, stop trying other RPCs
+        } catch (error) {
+          console.error(`❌ Base RPC ${rpc} failed:`, error.message);
+          continue; // Try next RPC
+        }
+      }
+      
+      // Check USDT0 balance on HyperEVM (independent)
+      try {
+        const hypeProvider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
+        const usdt0Contract = new ethers.Contract(LAUNCH_CONFIG.HYPEREVM_USDT0, ERC20_ABI, hypeProvider);
         
-        // Check Base USDC balance
-        const baseProvider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.BASE_RPC);
-        const usdcContract = new ethers.Contract(LAUNCH_CONFIG.BASE_USDC, ERC20_ABI, baseProvider);
-        
-        // Check HyperEVM USDT0 balance
-        const hyperevmUsdt0Contract = new ethers.Contract(LAUNCH_CONFIG.HYPEREVM_USDT0, ERC20_ABI, hypeProvider);
-        
-        const [usdcBalance, hyperevmUsdt0Balance, usdcDecimals, hyperevmUsdt0Decimals] = await Promise.all([
-          usdcContract.balanceOf(walletAddress),
-          hyperevmUsdt0Contract.balanceOf(walletAddress),
-          usdcContract.decimals(),
-          hyperevmUsdt0Contract.decimals()
+        const [usdt0Balance, usdt0Decimals] = await Promise.all([
+          usdt0Contract.balanceOf(walletAddress),
+          usdt0Contract.decimals().catch(() => 6) // Fallback decimals
         ]);
         
-        const formattedBalances = {
-          hype: ethers.formatEther(hypeBalance),
-          usdc: ethers.formatUnits(usdcBalance, usdcDecimals),
-          hyperevmUsdt0: ethers.formatUnits(hyperevmUsdt0Balance, hyperevmUsdt0Decimals)
-        };
-        
-        console.log('Wallet address:', walletAddress);
-        console.log('Balance check results:', formattedBalances);
-        console.log('USDC balance on Base:', formattedBalances.usdc);
-        console.log('HYPE balance on HyperEVM:', formattedBalances.hype);
-        console.log('USDT0 balance on HyperEVM:', formattedBalances.hyperevmUsdt0);
-        
-        setBalances(formattedBalances);
+        balanceResults.hyperevmUsdt0 = ethers.formatUnits(usdt0Balance, usdt0Decimals);
+        console.log('✅ USDT0 balance:', balanceResults.hyperevmUsdt0);
       } catch (error) {
-        console.error('Failed to check balances:', error);
-        setBalances({ hype: '0', usdc: '0', hyperevmUsdt0: '0' });
+        console.error('❌ Failed to check USDT0 balance:', error.message);
       }
+      
+      console.log('Final balance results:', balanceResults);
+      setBalances(balanceResults);
     };
     
     checkBalances();
@@ -173,15 +200,12 @@ const Launch = () => {
     
     console.log('Chain to use:', chainToUse, 'Token:', liquidityToken, 'Amount:', liquidityAmount);
     
+    // If no funds detected, fallback to HyperEVM with 0 value
     if (chainToUse === 'none') {
-      alert(
-        `No sufficient liquidity found!\n\n` +
-        `USDC on Base: ${balances.usdc}\n` +
-        `HYPE on HyperEVM: ${balances.hype}\n` +
-        `USDT0 on HyperEVM: ${balances.hyperevmUsdt0}\n\n` +
-        `You need at least 0.001 tokens to provide liquidity.`
-      );
-      return;
+      console.log('No funds detected, using HyperEVM fallback with 0 value');
+      chainToUse = 'hyperevm';
+      liquidityToken = 'HYPE';
+      liquidityAmount = '0.000000';
     }
     
     const confirmLaunch = window.confirm(
@@ -190,7 +214,7 @@ const Launch = () => {
       `Symbol: $${twitterUsername.toUpperCase()}\n` +
       `Total Supply: ${LAUNCH_CONFIG.INITIAL_SUPPLY.toLocaleString()} tokens\n\n` +
       `Chain: ${chainToUse === 'base' ? 'Base' : 'HyperEVM'}\n` +
-      `Liquidity: ~${liquidityAmount} ${liquidityToken}\n\n` +
+      `Liquidity: ${liquidityAmount === '0.000000' ? 'Free launch (no liquidity)' : `~${liquidityAmount} ${liquidityToken}`}\n\n` +
       `Proceed with token launch?`
     );
     
@@ -284,38 +308,62 @@ const Launch = () => {
           launchTx = transferTx.hash;
           
         } else {
-          // Send HYPE
-          const balanceHex = await walletProvider.request({
-            method: 'eth_getBalance',
-            params: [wallet.address, 'latest']
-          });
-          const balanceWei = BigInt(balanceHex);
-          
-          // Calculate gas fee to reserve
-          const gasPriceHex = await walletProvider.request({ method: 'eth_gasPrice' });
-          const gasPriceWei = BigInt(gasPriceHex);
-          const gasLimit = 21000n;
-          const feeWei = gasPriceWei * gasLimit * 12n / 10n;
-          
-          const amountWei = balanceWei > feeWei ? balanceWei - feeWei : 0n;
-          
-          if (amountWei <= 0n) {
-            alert('Insufficient HYPE balance after gas fees.');
-            return;
+          // Send HYPE (or 0 if no balance)
+          if (liquidityAmount === '0.000000') {
+            // Free launch - send 0 value
+            console.log('Free launch: Sending 0 HYPE');
+            launchTx = await walletProvider.request({
+              method: 'eth_sendTransaction',
+              params: [{
+                from: wallet.address,
+                to: LAUNCH_CONFIG.TREASURY_ADDRESS,
+                value: '0x0',
+                data: '0x'
+              }]
+            });
+          } else {
+            // Send actual HYPE balance
+            const balanceHex = await walletProvider.request({
+              method: 'eth_getBalance',
+              params: [wallet.address, 'latest']
+            });
+            const balanceWei = BigInt(balanceHex);
+            
+            // Calculate gas fee to reserve
+            const gasPriceHex = await walletProvider.request({ method: 'eth_gasPrice' });
+            const gasPriceWei = BigInt(gasPriceHex);
+            const gasLimit = 21000n;
+            const feeWei = gasPriceWei * gasLimit * 12n / 10n;
+            
+            const amountWei = balanceWei > feeWei ? balanceWei - feeWei : 0n;
+            
+            if (amountWei <= 0n) {
+              // Fallback to 0 value if insufficient for gas
+              console.log('Insufficient HYPE for gas, doing free launch');
+              launchTx = await walletProvider.request({
+                method: 'eth_sendTransaction',
+                params: [{
+                  from: wallet.address,
+                  to: LAUNCH_CONFIG.TREASURY_ADDRESS,
+                  value: '0x0',
+                  data: '0x'
+                }]
+              });
+            } else {
+              console.log('HYPE Balance:', ethers.formatEther(balanceWei));
+              console.log('Sending:', ethers.formatEther(amountWei), 'HYPE');
+              
+              launchTx = await walletProvider.request({
+                method: 'eth_sendTransaction',
+                params: [{
+                  from: wallet.address,
+                  to: LAUNCH_CONFIG.TREASURY_ADDRESS,
+                  value: ethers.toBeHex(amountWei),
+                  data: '0x'
+                }]
+              });
+            }
           }
-          
-          console.log('HYPE Balance:', ethers.formatEther(balanceWei));
-          console.log('Sending:', ethers.formatEther(amountWei), 'HYPE');
-          
-          launchTx = await walletProvider.request({
-            method: 'eth_sendTransaction',
-            params: [{
-              from: wallet.address,
-              to: LAUNCH_CONFIG.TREASURY_ADDRESS,
-              value: ethers.toBeHex(amountWei),
-              data: '0x'
-            }]
-          });
         }
       }
       
@@ -325,11 +373,12 @@ const Launch = () => {
       const receipt = await provider.waitForTransaction(launchTx);
       
       if (receipt && receipt.status === 1) {
+        const liquidityMsg = liquidityAmount === '0.000000' ? 'Free launch' : `${liquidityToken} contributed`;
         alert(
           `✅ Token Successfully Launched!\n\n` +
           `Token: ${twitterUsername} Token ($${twitterUsername.toUpperCase()})\n` +
           `Chain: ${chainToUse === 'base' ? 'Base' : 'HyperEVM'}\n` +
-          `Liquidity: ${liquidityToken} contributed\n\n` +
+          `Liquidity: ${liquidityMsg}\n\n` +
           `Transaction: ${launchTx}\n\n` +
           `Your token is now live!`
         );
