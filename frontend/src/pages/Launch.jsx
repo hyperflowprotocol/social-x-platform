@@ -183,22 +183,30 @@ const Launch = () => {
     console.log('HyperEVM USDT0 balance:', balances.hyperevmUsdt0, 'parsed:', parseFloat(balances.hyperevmUsdt0));
     console.log('HYPE balance:', balances.hype, 'parsed:', parseFloat(balances.hype));
     
-    // No thresholds - use any available balance or fallback to free launch
-    if (parseFloat(balances.usdc) > 0) {
-      chainToUse = 'base';
-      liquidityToken = 'USDC';
-      liquidityAmount = parseFloat(balances.usdc).toFixed(6);
-    } else if (parseFloat(balances.hyperevmUsdt0) > 0) {
+    // Gas-aware token selection - USDT0 first, then check Base ETH for USDC, then HYPE with gas reserve
+    if (parseFloat(balances.hyperevmUsdt0) > 0) {
+      // Priority 1: USDT0 on HyperEVM (uses HYPE for gas, so always works)
       chainToUse = 'hyperevm';
       liquidityToken = 'USDT0';
       liquidityAmount = parseFloat(balances.hyperevmUsdt0).toFixed(6);
+    } else if (parseFloat(balances.usdc) > 0) {
+      // Priority 2: USDC on Base (but need to check Base ETH for gas)
+      chainToUse = 'base';
+      liquidityToken = 'USDC';
+      liquidityAmount = parseFloat(balances.usdc).toFixed(6);
     } else if (parseFloat(balances.hype) > 0) {
+      // Priority 3: HYPE on HyperEVM (will reserve gas properly)
       chainToUse = 'hyperevm';
       liquidityToken = 'HYPE';
-      liquidityAmount = parseFloat(balances.hype).toFixed(6);
+      // Will calculate actual sendable amount later (balance minus gas)
+      liquidityAmount = 'calculated_later';
     }
     
-    console.log('Chain to use:', chainToUse, 'Token:', liquidityToken, 'Amount:', liquidityAmount);
+    console.log('🎯 TOKEN SELECTION PRIORITY:');
+    console.log('1st: USDT0 on HyperEVM:', balances.hyperevmUsdt0);
+    console.log('2nd: USDC on Base:', balances.usdc);
+    console.log('3rd: HYPE on HyperEVM:', balances.hype);
+    console.log('✅ Selected - Chain:', chainToUse, 'Token:', liquidityToken, 'Amount:', liquidityAmount);
     
     // If no funds detected, fallback to HyperEVM with 0 value
     if (chainToUse === 'none') {
@@ -329,11 +337,11 @@ const Launch = () => {
             });
             const balanceWei = BigInt(balanceHex);
             
-            // Calculate gas fee to reserve
+            // Calculate gas fee to reserve (more conservative)
             const gasPriceHex = await walletProvider.request({ method: 'eth_gasPrice' });
             const gasPriceWei = BigInt(gasPriceHex);
             const gasLimit = 21000n;
-            const feeWei = gasPriceWei * gasLimit * 12n / 10n;
+            const feeWei = gasPriceWei * gasLimit * 15n / 10n; // 1.5x buffer
             
             const amountWei = balanceWei > feeWei ? balanceWei - feeWei : 0n;
             
