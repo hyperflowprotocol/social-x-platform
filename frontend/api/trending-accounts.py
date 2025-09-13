@@ -2,6 +2,7 @@ from http.server import BaseHTTPRequestHandler
 import json
 import random
 import time
+# Updated with 4 accounts including bittards.hl
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
