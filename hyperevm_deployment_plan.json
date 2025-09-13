@@ -1,0 +1,36 @@
+{
+  "deployment_plan": "HyperEVM HYPE Token Deployment",
+  "wallet": "0xbfc06de2711abee4d1d9f370cde09773ddde7048",
+  "private_key": "0xf3d94b527f5aad6770cbd8d9b3bf7963de26be956b683c25b07f5a02db4096d3",
+  "network": {
+    "name": "HyperEVM Mainnet",
+    "chain_id": 999,
+    "rpc_url": "https://api.hyperevm.org",
+    "currency": "HYPE"
+  },
+  "recommended_methods": [
+    {
+      "method": "Remix IDE",
+      "url": "https://remix.ethereum.org",
+      "steps": [
+        "Add HyperEVM network to MetaMask",
+        "Import wallet with private key",
+        "Create HYPE.sol contract file",
+        "Compile and deploy"
+      ]
+    },
+    {
+      "method": "Foundry",
+      "command": "forge create HYPE.sol:HYPE --rpc-url https://api.hyperevm.org --private-key 0xf3d94b527f5aad6770cbd8d9b3bf7963de26be956b683c25b07f5a02db4096d3 --chain-id 999"
+    },
+    {
+      "method": "Hardhat",
+      "setup": "npm install hardhat @nomiclabs/hardhat-ethers ethers",
+      "deploy": "npx hardhat run scripts/deploy.js --network hyperevm"
+    }
+  ],
+  "contract_code_file": "HYPE.sol",
+  "estimated_gas_cost": "0.02-0.05 HYPE",
+  "timestamp": 1755343809,
+  "date": "2025-08-16T11:30:09.436701"
+}
