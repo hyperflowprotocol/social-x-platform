@@ -5,29 +5,47 @@ import time
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        # Dynamic market overview that changes over time
+        # Dynamic market overview - aggregate all 3 accounts
         base_time = time.time()
         
-        # Market cap fluctuates around 12K
-        market_cap_variance = random.uniform(-1000, 3000)
-        total_market_cap = max(8000, round(12000 + market_cap_variance))
+        # Calculate dynamic market caps for all 3 accounts (matching trending-accounts.py)
+        # @diero_hl: ~$0.12 * 100,000 = ~$12,000
+        diero_price = round(0.12 + random.uniform(-0.006, 0.006), 4)
+        diero_market_cap = round(diero_price * 100000)
         
-        # Volume changes
-        total_volume_24h = random.randint(1500, 4500)
+        # @jeromeliquid: ~$0.15 * 80,000 = ~$12,000  
+        jerome_price = round(0.15 + random.uniform(-0.008, 0.012), 4)
+        jerome_market_cap = round(jerome_price * 80000)
         
-        # Trader count varies
-        active_traders = random.randint(120, 200)
+        # @jeffrey_hl: ~$0.18 * 60,000 = ~$10,800
+        jeffrey_price = round(0.18 + random.uniform(-0.009, 0.015), 4)
+        jeffrey_market_cap = round(jeffrey_price * 60000)
         
-        # Trending change percentage
-        trending_change_val = round(random.uniform(-8.0, 45.0), 1)
+        # Total market cap from all 3 accounts
+        total_market_cap = diero_market_cap + jerome_market_cap + jeffrey_market_cap
+        
+        # Combined volume from all accounts
+        diero_volume = random.randint(1500, 4000)
+        jerome_volume = random.randint(2000, 6000)  
+        jeffrey_volume = random.randint(3000, 8000)
+        total_volume_24h = diero_volume + jerome_volume + jeffrey_volume
+        
+        # Combined active holders from all accounts
+        diero_holders = random.randint(120, 180)
+        jerome_holders = random.randint(200, 300)
+        jeffrey_holders = random.randint(350, 500)
+        active_traders = diero_holders + jerome_holders + jeffrey_holders
+        
+        # Overall market trending change
+        trending_change_val = round(random.uniform(-5.0, 35.0), 1)
         trending_change = f"{'+' if trending_change_val >= 0 else ''}{trending_change_val}%"
         
         response = {
             "total_market_cap": total_market_cap,
             "total_volume_24h": total_volume_24h,
-            "active_accounts": 1,
+            "active_accounts": 3,  # We have 3 trending accounts
             "active_traders": active_traders,
-            "total_tokens_launched": 1,
+            "total_tokens_launched": 3,  # All 3 tokens launched
             "trending_change": trending_change
         }
         
