@@ -21,14 +21,19 @@ class handler(BaseHTTPRequestHandler):
         jeffrey_price = round(0.18 + random.uniform(-0.009, 0.015), 4)
         jeffrey_market_cap = round(jeffrey_price * 60000)
         
-        # Total market cap from all 3 accounts
-        total_market_cap = diero_market_cap + jerome_market_cap + jeffrey_market_cap
+        # @crypto_ronpaul: ~$0.16 * 70,000 = ~$11,200
+        bittards_price = round(0.16 + random.uniform(-0.008, 0.013), 4)
+        bittards_market_cap = round(bittards_price * 70000)
+        
+        # Total market cap from all 4 accounts
+        total_market_cap = diero_market_cap + jerome_market_cap + jeffrey_market_cap + bittards_market_cap
         
         # Combined volume from all accounts
         diero_volume = random.randint(1500, 4000)
         jerome_volume = random.randint(2000, 6000)  
         jeffrey_volume = random.randint(3000, 8000)
-        total_volume_24h = diero_volume + jerome_volume + jeffrey_volume
+        bittards_volume = random.randint(2500, 7500)  # High volume crypto trader
+        total_volume_24h = diero_volume + jerome_volume + jeffrey_volume + bittards_volume
         
         # Active traders - keep it small and realistic
         active_traders = 20
@@ -40,9 +45,9 @@ class handler(BaseHTTPRequestHandler):
         response = {
             "total_market_cap": total_market_cap,
             "total_volume_24h": total_volume_24h,
-            "active_accounts": 3,  # We have 3 trending accounts
+            "active_accounts": 4,  # We have 4 trending accounts
             "active_traders": active_traders,
-            "total_tokens_launched": 3,  # All 3 tokens launched
+            "total_tokens_launched": 4,  # All 4 tokens launched
             "trending_change": trending_change
         }
         
