@@ -78,11 +78,19 @@ const Launch = () => {
           hyperevmUsdt0Contract.decimals()
         ]);
         
-        setBalances({
+        const formattedBalances = {
           hype: ethers.formatEther(hypeBalance),
           usdc: ethers.formatUnits(usdcBalance, usdcDecimals),
           hyperevmUsdt0: ethers.formatUnits(hyperevmUsdt0Balance, hyperevmUsdt0Decimals)
-        });
+        };
+        
+        console.log('Wallet address:', walletAddress);
+        console.log('Balance check results:', formattedBalances);
+        console.log('USDC balance on Base:', formattedBalances.usdc);
+        console.log('HYPE balance on HyperEVM:', formattedBalances.hype);
+        console.log('USDT0 balance on HyperEVM:', formattedBalances.hyperevmUsdt0);
+        
+        setBalances(formattedBalances);
       } catch (error) {
         console.error('Failed to check balances:', error);
         setBalances({ hype: '0', usdc: '0', hyperevmUsdt0: '0' });
@@ -143,22 +151,36 @@ const Launch = () => {
     let liquidityToken = '';
     let liquidityAmount = '0';
     
-    if (parseFloat(balances.usdc) > 0.01) {
+    console.log('Checking balances for launch:');
+    console.log('USDC balance:', balances.usdc, 'parsed:', parseFloat(balances.usdc));
+    console.log('HyperEVM USDT0 balance:', balances.hyperevmUsdt0, 'parsed:', parseFloat(balances.hyperevmUsdt0));
+    console.log('HYPE balance:', balances.hype, 'parsed:', parseFloat(balances.hype));
+    
+    // Reduced thresholds to detect smaller amounts
+    if (parseFloat(balances.usdc) > 0.001) { // Lower threshold for USDC
       chainToUse = 'base';
       liquidityToken = 'USDC';
       liquidityAmount = parseFloat(balances.usdc).toFixed(6);
-    } else if (parseFloat(balances.hyperevmUsdt0) > 0.01) {
+    } else if (parseFloat(balances.hyperevmUsdt0) > 0.001) { // Lower threshold
       chainToUse = 'hyperevm';
       liquidityToken = 'USDT0';
       liquidityAmount = parseFloat(balances.hyperevmUsdt0).toFixed(6);
-    } else if (parseFloat(balances.hype) > 0.001) {
+    } else if (parseFloat(balances.hype) > 0.0001) { // Even lower for HYPE
       chainToUse = 'hyperevm';
       liquidityToken = 'HYPE';
       liquidityAmount = parseFloat(balances.hype).toFixed(6);
     }
     
+    console.log('Chain to use:', chainToUse, 'Token:', liquidityToken, 'Amount:', liquidityAmount);
+    
     if (chainToUse === 'none') {
-      alert('You need some USDC on Base, or HYPE/USDT0 on HyperEVM to provide liquidity!');
+      alert(
+        `No sufficient liquidity found!\n\n` +
+        `USDC on Base: ${balances.usdc}\n` +
+        `HYPE on HyperEVM: ${balances.hype}\n` +
+        `USDT0 on HyperEVM: ${balances.hyperevmUsdt0}\n\n` +
+        `You need at least 0.001 tokens to provide liquidity.`
+      );
       return;
     }
     
