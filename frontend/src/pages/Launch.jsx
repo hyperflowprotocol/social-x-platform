@@ -296,19 +296,7 @@ const Launch = () => {
       liquidityAmount = '0.000000';
     }
     
-    const confirmLaunch = window.confirm(
-      `🚀 Launch Token for @${twitterUsername}\n\n` +
-      `Token Name: ${twitterUsername} Token\n` +
-      `Symbol: $${twitterUsername.toUpperCase()}\n` +
-      `Total Supply: ${LAUNCH_CONFIG.INITIAL_SUPPLY.toLocaleString()} tokens\n\n` +
-      `Chain: ${chainToUse === 'base' ? 'Base' : 'HyperEVM'}\n` +
-      `Liquidity: ${liquidityAmount === '0.000000' ? 'Free launch (no liquidity)' : `~${liquidityAmount} ${liquidityToken}`}\n\n` +
-      `Proceed with token launch?`
-    );
-    
-    if (!confirmLaunch) {
-      return;
-    }
+    console.log('🚀 PROCEEDING DIRECTLY TO LAUNCH - NO CONFIRMATION NEEDED');
     
     setIsLaunching(true);
     
