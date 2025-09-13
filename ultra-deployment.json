@@ -1,0 +1,16 @@
+{
+  "network": "HyperEVM",
+  "chainId": 999,
+  "factoryAddress": "0x4DEE3bc4C8e2b831C4fea5477950038e5dA543F2",
+  "hypeTokenAddress": "0x99c56dE989640b9Fd1aC05B2441130859485Daac",
+  "deployer": "0xbFC06dE2711aBEe4d1D9F370CDe09773dDDE7048",
+  "deployedAt": "2025-08-19T19:36:38.729Z",
+  "withdrawalLogic": {
+    "platformOwner": "0xbFC06dE2711aBEe4d1D9F370CDe09773dDDE7048",
+    "canWithdrawFrom": "platform and creator pools",
+    "withdrawalFunctions": [
+      "withdraw(handle, poolType, amount) - onlyOwner",
+      "withdrawAll(amount) - onlyOwner"
+    ]
+  }
+}
