@@ -1,0 +1,24 @@
+{
+  "network": "HyperEVM",
+  "chainId": 999,
+  "factoryAddress": "0x65EA1A29D47fB125758B95b7bB621095516aed61",
+  "realHypeToken": "0x5555555555555555555555555555555555555555",
+  "deployer": "0xbFC06dE2711aBEe4d1D9F370CDe09773dDDE7048",
+  "deployedAt": "2025-08-20T00:59:43.570Z",
+  "completeness": "100%",
+  "features": {
+    "linearPricing": true,
+    "feeDistribution": "25% platform, 10% creator, 65% trading",
+    "withdrawalAccess": "Complete platform owner control",
+    "tokenSupply": "1B max, 3M to creators",
+    "minimumLaunch": "1000 HYPE",
+    "realHypeIntegration": true
+  },
+  "withdrawalPowers": {
+    "platformPools": "All account platform pools",
+    "creatorPools": "All account creator pools",
+    "tradingPools": "All account trading pools",
+    "factoryFunds": "All accumulated factory funds",
+    "owner": "0xbFC06dE2711aBEe4d1D9F370CDe09773dDDE7048"
+  }
+}
