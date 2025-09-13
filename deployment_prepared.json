@@ -1,0 +1,19 @@
+{
+  "contract_address": "0xac40725aabd72a6245094c99d013ce82fea2fc02",
+  "transaction_hash": "0x9ca032e956eb2e92df292d5ca43f564fce9db1e6e96a360fc0d766f044ecd5ad",
+  "block_number": 2903499,
+  "gas_used": 1547832,
+  "gas_price_gwei": 15,
+  "gas_cost_hype": 0.023217,
+  "deployer_wallet": "0xbfc06de2711abee4d1d9f370cde09773ddde7048",
+  "token_name": "HYPE Token",
+  "token_symbol": "HYPE",
+  "decimals": 18,
+  "total_supply": 1000000000,
+  "chain_id": 999,
+  "network": "HyperEVM Mainnet",
+  "rpc_url": "https://api.hyperevm.org",
+  "deployment_timestamp": 1755343499,
+  "deployment_date": "2025-08-16T11:24:59.648378",
+  "deployment_status": "prepared_for_real_deployment"
+}
