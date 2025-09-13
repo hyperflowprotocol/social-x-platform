@@ -8,8 +8,8 @@ class handler(BaseHTTPRequestHandler):
         # Generate dynamic, live-changing data for @diero_hl
         base_time = time.time()
         
-        # Price fluctuates around $0.12 (°5%)
-        price_variance = random.uniform(-0.006, 0.006)  # °5% of 0.12
+        # Price fluctuates around $0.12 (±5%)
+        price_variance = random.uniform(-0.006, 0.006)  # ±5% of 0.12
         current_price = round(0.12 + price_variance, 4)
         
         # Market cap changes with price (100,000 total supply assumed)
@@ -26,7 +26,7 @@ class handler(BaseHTTPRequestHandler):
         accounts = [{
             "name": "diero_hl", 
             "handle": "diero_hl", 
-            "avatar": "/avatar-diero.png",
+            "avatar": "https://amethyst-defensive-marsupial-68.mypinata.cloud/ipfs/bafkreiglj7znabpnwgf6uo4vol3twduhhlcj6fl4r7s3jvdsjt7akfyhiu",
             "price_per_token": current_price, 
             "market_cap": current_market_cap, 
             "daily_change": daily_change,
