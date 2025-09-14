@@ -177,20 +177,10 @@ function App() {
             'okx_wallet',
           ],
         },
-        // Enable ALL login methods
+        // Enable only wallet and Twitter login
         loginMethods: [
           'wallet',
-          'email', 
-          'sms',
-          'google',
-          'discord', 
-          'twitter',
-          'github',
-          'apple',
-          'linkedin',
-          'tiktok',
-          'farcaster',
-          'telegram'
+          'twitter'
         ],
         // Safari compatibility fixes
         storage: {
