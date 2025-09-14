@@ -171,7 +171,7 @@ function App() {
         appearance: {
           theme: 'light',
           accentColor: '#1DA1F2',
-          showWalletLoginFirst: false,
+          showWalletLoginFirst: true,
           // Configure wallet display order - Only OKX wallet
           walletList: [
             'okx_wallet',
