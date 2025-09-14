@@ -169,7 +169,7 @@ function App() {
       appId={PRIVY_APP_ID}
       config={{
         appearance: {
-          theme: 'light',
+          theme: 'dark',
           accentColor: '#1DA1F2',
           showWalletLoginFirst: true,
           logo: 'https://gateway.pinata.cloud/ipfs/bafybeias4cbtyswqin32bdw6ncuw7m5j2ltdei4q5is6tipr4gqok5h53q',
