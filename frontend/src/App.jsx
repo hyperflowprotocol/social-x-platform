@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { PrivyProvider, usePrivy } from '@privy-io/react-auth';
-import { Analytics } from '@vercel/analytics/react';
+// import { Analytics } from '@vercel/analytics/react';
 import Markets from './pages/Markets';
 import Portfolio from './pages/Portfolio';
 import Launch from './pages/Launch';
@@ -172,12 +172,9 @@ function App() {
           theme: 'light',
           accentColor: '#1DA1F2',
           showWalletLoginFirst: false,
-          // Configure wallet display order - MetaMask first, then others
+          // Configure wallet display order - Only OKX wallet
           walletList: [
-            'detected_wallets',  // Browser extension wallets (like MetaMask)
-            'coinbase_wallet',
-            'rainbow',
-            'wallet_connect',    // WalletConnect as fallback
+            'okx_wallet',
           ],
         },
         // Enable ALL login methods
@@ -293,7 +290,7 @@ function App() {
       <Router>
         <AppLayout />
       </Router>
-      <Analytics />
+      {/* <Analytics /> */}
     </PrivyProvider>
   );
 }
