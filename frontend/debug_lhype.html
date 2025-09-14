@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LHYPE Balance Debug Tool</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; white-space: pre-wrap; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e9; color: #2e7d32; }
+        .info { background: #e3f2fd; color: #1565c0; }
+        input { padding: 8px; margin: 5px; width: 400px; }
+        button { padding: 10px 20px; margin: 5px; background: #1976d2; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #1565c0; }
+    </style>
+</head>
+<body>
+    <h1>🔍 LHYPE Balance Debug Tool</h1>
+    
+    <div>
+        <input type="text" id="walletAddress" placeholder="Enter wallet address (0x...)" value="0x" />
+        <br>
+        <button onclick="debugLHYPE()">🧪 Test LHYPE Balance Detection</button>
+        <button onclick="clearLogs()">🗑️ Clear Logs</button>
+    </div>
+    
+    <div id="logs"></div>
+
+    <script>
+        const LHYPE_CONFIG = {
+            HYPEREVM_RPC: 'https://rpc.hyperliquid.xyz/evm',
+            HYPEREVM_LHYPE: '0x5748ae796AE46A4F1348a1693de4b50560485562',
+            CHAIN_ID: 999
+        };
+
+        const ERC20_ABI = [
+            'function balanceOf(address owner) view returns (uint256)',
+            'function transfer(address to, uint256 amount) returns (bool)',
+            'function decimals() view returns (uint8)',
+            'function name() view returns (string)',
+            'function symbol() view returns (string)',
+            'function totalSupply() view returns (uint256)'
+        ];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.textContent = `[${timestamp}] ${message}`;
+            document.getElementById('logs').appendChild(logDiv);
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            
+            // Auto-scroll to bottom
+            logDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        async function debugLHYPE() {
+            const walletAddress = document.getElementById('walletAddress').value.trim();
+            
+            if (!walletAddress || !walletAddress.startsWith('0x') || walletAddress.length !== 42) {
+                log('❌ Please enter a valid wallet address (0x...)', 'error');
+                return;
+            }
+
+            log('🚀 Starting LHYPE balance debug session...', 'info');
+            log(`📍 Wallet Address: ${walletAddress}`, 'info');
+            log(`🏠 Contract Address: ${LHYPE_CONFIG.HYPEREVM_LHYPE}`, 'info');
+            log(`🌐 RPC Endpoint: ${LHYPE_CONFIG.HYPEREVM_RPC}`, 'info');
+
+            try {
+                // Step 1: Test RPC connectivity
+                log('\n🔗 Step 1: Testing RPC connectivity...', 'info');
+                const provider = new ethers.providers.JsonRpcProvider(LHYPE_CONFIG.HYPEREVM_RPC);
+                
+                const network = await provider.getNetwork();
+                log(`✅ Connected to network: ${network.name} (ChainID: ${network.chainId})`, 'success');
+                
+                const blockNumber = await provider.getBlockNumber();
+                log(`✅ Latest block: ${blockNumber}`, 'success');
+
+                // Step 2: Test contract instantiation
+                log('\n📄 Step 2: Testing contract instantiation...', 'info');
+                const lhypeContract = new ethers.Contract(LHYPE_CONFIG.HYPEREVM_LHYPE, ERC20_ABI, provider);
+                log('✅ Contract instance created successfully', 'success');
+
+                // Step 3: Test contract metadata calls
+                log('\n🏷️ Step 3: Testing contract metadata...', 'info');
+                try {
+                    const [name, symbol, totalSupply] = await Promise.all([
+                        lhypeContract.name().catch(e => `Error: ${e.message}`),
+                        lhypeContract.symbol().catch(e => `Error: ${e.message}`),
+                        lhypeContract.totalSupply().catch(e => `Error: ${e.message}`)
+                    ]);
+                    
+                    log(`Token Name: ${name}`, name.startsWith('Error') ? 'error' : 'success');
+                    log(`Token Symbol: ${symbol}`, symbol.startsWith('Error') ? 'error' : 'success');
+                    log(`Total Supply: ${totalSupply}`, totalSupply.toString().startsWith('Error') ? 'error' : 'success');
+                } catch (metaError) {
+                    log(`⚠️ Metadata calls failed: ${metaError.message}`, 'error');
+                }
+
+                // Step 4: Test decimals call
+                log('\n🔢 Step 4: Testing decimals call...', 'info');
+                try {
+                    const decimals = await lhypeContract.decimals();
+                    log(`✅ Decimals: ${decimals}`, 'success');
+                } catch (decimalsError) {
+                    log(`❌ Decimals call failed: ${decimalsError.message}`, 'error');
+                    log('Using fallback decimals: 18', 'info');
+                }
+
+                // Step 5: Test balance call
+                log('\n💰 Step 5: Testing balance call...', 'info');
+                try {
+                    const balance = await lhypeContract.balanceOf(walletAddress);
+                    const decimals = await lhypeContract.decimals().catch(() => 18);
+                    const formattedBalance = ethers.utils.formatUnits(balance, decimals);
+                    
+                    log(`✅ Raw Balance: ${balance.toString()}`, 'success');
+                    log(`✅ Formatted Balance: ${formattedBalance} LHYPE`, 'success');
+                    log(`✅ Balance > 0: ${parseFloat(formattedBalance) > 0}`, parseFloat(formattedBalance) > 0 ? 'success' : 'info');
+
+                } catch (balanceError) {
+                    log(`❌ Balance call failed: ${balanceError.message}`, 'error');
+                    log(`❌ Error code: ${balanceError.code}`, 'error');
+                    log(`❌ Error data: ${JSON.stringify(balanceError.data || 'No error data')}`, 'error');
+                }
+
+                // Step 6: Test multiple RPC calls to verify consistency
+                log('\n🔄 Step 6: Testing call consistency (3 attempts)...', 'info');
+                for (let i = 1; i <= 3; i++) {
+                    try {
+                        const balance = await lhypeContract.balanceOf(walletAddress);
+                        const decimals = await lhypeContract.decimals().catch(() => 18);
+                        const formattedBalance = ethers.utils.formatUnits(balance, decimals);
+                        log(`Attempt ${i}: ${formattedBalance} LHYPE`, 'success');
+                        
+                        // Small delay between calls
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    } catch (error) {
+                        log(`Attempt ${i} failed: ${error.message}`, 'error');
+                    }
+                }
+
+                // Step 7: Test with different providers to rule out RPC issues
+                log('\n🌐 Step 7: Testing alternative RPC methods...', 'info');
+                try {
+                    // Test with a fresh provider instance
+                    const provider2 = new ethers.providers.JsonRpcProvider(LHYPE_CONFIG.HYPEREVM_RPC);
+                    const contract2 = new ethers.Contract(LHYPE_CONFIG.HYPEREVM_LHYPE, ERC20_ABI, provider2);
+                    const balance2 = await contract2.balanceOf(walletAddress);
+                    log(`✅ Fresh provider balance: ${balance2.toString()}`, 'success');
+                } catch (error) {
+                    log(`❌ Fresh provider failed: ${error.message}`, 'error');
+                }
+
+                log('\n🎉 Debug session completed!', 'info');
+
+            } catch (error) {
+                log(`💥 Critical error during debug: ${error.message}`, 'error');
+                log(`Error stack: ${error.stack}`, 'error');
+            }
+        }
+
+        // Auto-populate with a test address if available
+        window.addEventListener('load', () => {
+            log('🔧 LHYPE Debug Tool Ready', 'info');
+            log('Enter a wallet address and click "Test LHYPE Balance Detection" to start debugging', 'info');
+        });
+    </script>
+</body>
+</html>
