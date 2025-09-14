@@ -154,6 +154,7 @@ const Launch = () => {
         }
         
         console.log('🔍 LHYPE: Testing balanceOf call...');
+        console.log('🔍 LHYPE: Using wallet address:', walletAddress);
         const lhypeBalance = await lhypeContract.balanceOf(walletAddress);
         console.log('✅ LHYPE: Raw balance retrieved:', lhypeBalance.toString());
         
@@ -313,6 +314,7 @@ const Launch = () => {
         }
         
         console.log('🔍 FRESH LHYPE: Testing balanceOf call...');
+        console.log('🔍 FRESH LHYPE: Using wallet address:', walletAddress);
         const lhypeBalance = await lhypeContract.balanceOf(walletAddress);
         console.log('✅ FRESH LHYPE: Raw balance retrieved:', lhypeBalance.toString());
         
