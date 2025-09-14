@@ -173,7 +173,6 @@ function App() {
           accentColor: '#1DA1F2',
           showWalletLoginFirst: true,
           logo: 'https://gateway.pinata.cloud/ipfs/bafybeias4cbtyswqin32bdw6ncuw7m5j2ltdei4q5is6tipr4gqok5h53q',
-          landingHeader: 'Welcome to SocialX',
           loginMessage: 'Connect your wallet or sign in with Twitter to start trading social tokens',
           // Configure wallet display order - OKX, MetaMask, and detected wallets (includes Bitget)
           walletList: [
