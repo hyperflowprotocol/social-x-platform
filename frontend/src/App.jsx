@@ -172,9 +172,11 @@ function App() {
           theme: 'light',
           accentColor: '#1DA1F2',
           showWalletLoginFirst: true,
-          // Configure wallet display order - Only OKX wallet
+          // Configure wallet display order - OKX, MetaMask, and detected wallets (includes Bitget)
           walletList: [
             'okx_wallet',
+            'metamask',
+            'detected_wallets',
           ],
         },
         // Enable only wallet and Twitter login
